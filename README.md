@@ -254,35 +254,13 @@ Future<Map<String, dynamic>> predictRisk(Map<String, dynamic> patientData) async
 
 ## 🔒 Sécurité et confidentialité
 
-### Mesures implémentées
-1. **Validation des inputs** : Vérification des types et plages
-2. **CORS configuré** : Accès restreint
-3. **Données anonymisées** : Aucune PII
-4. **Usage local** : Pour développement
-
-### Production
-```python
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Limite 16MB
-CORS(app, origins=['https://votredomaine.com'])  # CORS restreint
-```
+- **Aucune donnée patient** n'est stockée sur le téléphone
+- **Aucune donnée** n'est persistée côté serveur
+- Les données sont utilisées **uniquement** pour la prédiction en temps réel
+- **Communication locale** entre mobile et backend (pas de cloud)
+- L'application est une **aide à la décision médicale** et ne remplace pas un avis médical professionnel
 
 ---
-
-## 🚀 Déploiement
-
-### Avec Gunicorn
-```bash
-pip install gunicorn
-gunicorn --workers 4 --bind 0.0.0.0:5000 app:app
-```
-
-### Variables d'environnement
-```bash
-export FLASK_ENV=production
-export MODEL_PATH=./model/best_model.joblib
-export PREPROCESSOR_PATH=./model/preprocessor.joblib
-export MODEL_ACCURACY=0.82
-```
 
 ---
 
@@ -312,13 +290,13 @@ Toute décision concernant la santé doit être prise en consultation avec un pr
 ## 👨‍💻 Auteur
 
 **Abdoul-wakilou Tiga**  
-Étudiant en Master 2 Intelligence Artificielle & Data Science  
-Université [Nom de l'université]  
-Année académique 2023-2024
+Étudiant en Master 2 Génie Logiciel 
+Université Université d'Abomey-Calavi
+Année académique 2024-2025
 
 ### Contact
-- 📧 Email : [votre-email@etudiant.univ-xxx.fr]
-- 🔗 LinkedIn : [votre-profil-linkedin]
+- 📧 Email : [abdoulwakiloutiga@gmail.com](abdoulwakiloutiga@gmail.com)
+- 🔗 LinkedIn : [Abdoul-wakilou-Tiga](https://linkedin.com/in/abdoul-wakilou-tiga)
 - 🐙 GitHub : [Abdoul-wakilou-Tiga](https://github.com/Abdoul-wakilou-Tiga)
 
 ---
