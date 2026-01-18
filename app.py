@@ -14,7 +14,7 @@ print("🔄 Chargement du modèle et du préprocesseur pour Flask...")
 model = joblib.load('model/best_model.joblib')
 preprocessor = joblib.load('model/preprocessor.joblib')
 
-print("✅ Modèle et préprocesseur chargés!")
+print("Modèle et préprocesseur chargés!")
 print(f"   Modèle: {type(model).__name__}")
 print(f"   Préprocesseur: {type(preprocessor).__name__}")
 

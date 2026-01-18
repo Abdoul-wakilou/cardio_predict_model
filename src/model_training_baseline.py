@@ -16,7 +16,7 @@ X_test = np.loadtxt("../data/X_test_preprocessed.csv", delimiter=",")
 y_train = pd.read_csv("../data/y_train.csv").squeeze() # .squeeze() pour convertir en Series
 y_test = pd.read_csv("../data/y_test.csv").squeeze()
 
-print("✅ Données chargées!")
+print(" Données chargées!")
 print(f"X_train shape: {X_train.shape}, y_train shape: {y_train.shape}")
 print(f"X_test shape: {X_test.shape}, y_test shape: {y_test.shape}")
 
@@ -73,4 +73,4 @@ for name, res in results.items():
 # 5. Identifier le meilleur modèle
 best_model_name = max(results, key=lambda x: results[x]['accuracy'])
 best_accuracy = results[best_model_name]['accuracy']
-print(f"\n🎯 Meilleur modèle: {best_model_name} avec une accuracy de {best_accuracy:.4f}")
+print(f"\n Meilleur modèle: {best_model_name} avec une accuracy de {best_accuracy:.4f}")
