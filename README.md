@@ -179,10 +179,10 @@ curl -X POST http://localhost:5000/predict \
 
 ### Algorithme : Régression Logistique
 - **Accuracy sur test** : **82%**
-- **Précision** : 80%
-- **Rappel** : 83%
-- **F1-score** : 81%
-- **AUC-ROC** : 0.88
+- **Précision** : 84%
+- **Rappel** : 74%
+- **F1-score** : 80%
+- **AUC-ROC** : 0.905
 
 ### Comparaison des algorithmes
 | Algorithme | Accuracy |
