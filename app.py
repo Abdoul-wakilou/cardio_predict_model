@@ -1,111 +1,154 @@
-# app.py - Version corrigée avec le bon prétraitement
+"""
+app.py - API Flask pour CardioPredict
+- Endpoint /predict (POST) pour la prédiction du risque cardiovasculaire
+- Génération de recommandations personnalisées
+- Endpoint /health pour vérifier l'état du service
+"""
+
 from flask import Flask, request, jsonify
-from flask_cors import CORS
 import joblib
-import pandas as pd
 import numpy as np
+import pandas as pd
+import os
+
+# Importer les fonctions utilitaires
+from src.utils import generate_recommendations, get_risk_level
 
 app = Flask(__name__)
-CORS(app)
 
-print("🔄 Chargement du modèle et du préprocesseur pour Flask...")
+# ============================================================================
+# CHARGEMENT DU MODÈLE ET DU PRÉPROCESSEUR
+# ============================================================================
 
-# Charger le modèle ET le préprocesseur
-model = joblib.load('model/best_model.joblib')
-preprocessor = joblib.load('model/preprocessor.joblib')
+MODEL_PATH = 'model/best_model_full.joblib'
+PREPROCESSOR_PATH = 'model/preprocessor_full.joblib'
 
-print("Modèle et préprocesseur chargés!")
-print(f"   Modèle: {type(model).__name__}")
-print(f"   Préprocesseur: {type(preprocessor).__name__}")
+print("="*60)
+print("🚀 Démarrage de l'API CardioPredict")
+print("="*60)
 
-@app.route('/')
-def home():
-    return jsonify({
-        "message": "API CardioPredict - Cleveland Heart Disease",
-        "status": "active",
-        "model": "Régression Logistique",
-        "features_required": [
-            "age", "sex", "cp", "trestbps", "chol", "fbs", "restecg",
-            "thalach", "exang", "oldpeak", "slope", "ca", "thal"
-        ]
-    })
+# Vérification des fichiers
+if not os.path.exists(MODEL_PATH):
+    raise FileNotFoundError(f"Modèle introuvable : {MODEL_PATH}")
+if not os.path.exists(PREPROCESSOR_PATH):
+    raise FileNotFoundError(f"Préprocesseur introuvable : {PREPROCESSOR_PATH}")
+
+# Chargement
+model = joblib.load(MODEL_PATH)
+preprocessor = joblib.load(PREPROCESSOR_PATH)
+
+print(f"✅ Modèle chargé : {type(model).__name__}")
+print(f"✅ Préprocesseur chargé")
+
+# ============================================================================
+# ENDPOINT /predict
+# ============================================================================
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    """Endpoint principal: reçoit des données BRUTES, prétraite, prédit"""
+    """
+    Endpoint de prédiction.
+    Attend un JSON avec les 13 variables cliniques.
+    Retourne la prédiction, la probabilité, le niveau de risque et les recommandations.
+    """
     try:
-        # 1. Recevoir les données brutes de Flutter
+        # Récupérer les données
         data = request.get_json()
         
-        # 2. Vérifier les features requises
-        required = ['age', 'sex', 'cp', 'trestbps', 'chol', 'fbs', 'restecg',
-                   'thalach', 'exang', 'oldpeak', 'slope', 'ca', 'thal']
+        if not data:
+            return jsonify({'error': 'Aucune donnée fournie'}), 400
         
-        missing = [f for f in required if f not in data]
+        # Liste des features attendues (ordre exact)
+        expected_features = ['age', 'sex', 'cp', 'trestbps', 'chol', 'fbs', 
+                             'restecg', 'thalach', 'exang', 'oldpeak', 'slope', 'ca', 'thal']
+        
+        # Vérifier la présence de toutes les features
+        missing = [f for f in expected_features if f not in data]
         if missing:
-            return jsonify({
-                'error': f'Features manquantes: {missing}',
-                'required_features': required
-            }), 400
+            return jsonify({'error': f'Features manquantes : {missing}'}), 400
         
-        # 3. Convertir en DataFrame (UNE SEULE LIGNE)
-        # IMPORTANT: garder le même ordre que pendant l'entraînement
-        input_df = pd.DataFrame([{
-            'age': data['age'],
-            'sex': data['sex'],
-            'cp': data['cp'],
-            'trestbps': data['trestbps'],
-            'chol': data['chol'],
-            'fbs': data['fbs'],
-            'restecg': data['restecg'],
-            'thalach': data['thalach'],
-            'exang': data['exang'],
-            'oldpeak': data['oldpeak'],
-            'slope': data['slope'],
-            'ca': data['ca'],
-            'thal': data['thal']
-        }])
+        # Construire le DataFrame
+        input_df = pd.DataFrame([{k: data[k] for k in expected_features}])
         
-        # 4. APPLIQUER LE MÊME PRÉTRAITEMENT que pendant l'entraînement
-        # C'est la partie CRITIQUE qui résout votre problème
-        processed_data = preprocessor.transform(input_df)
+        # Appliquer le préprocesseur
+        input_processed = preprocessor.transform(input_df)
         
-        # 5. Faire la prédiction
-        prediction = model.predict(processed_data)[0]  # 0 ou 1
-        probabilities = model.predict_proba(processed_data)[0]  # [prob_sain, prob_malade]
+        # Prédiction
+        prediction = int(model.predict(input_processed)[0])
+        probability = float(model.predict_proba(input_processed)[0][1])
         
-        # 6. Formater la réponse pour Flutter
+        # Déterminer le niveau de risque
+        risk_level, risk_label, risk_description = get_risk_level(prediction, probability)
+        
+        # Générer les recommandations personnalisées
+        recommendations = generate_recommendations(data, prediction, probability)
+        
+        # Réponse
         response = {
-            'prediction': int(prediction),
-            'prediction_label': 'Risque Élevé' if prediction == 1 else 'Risque Faible/Modéré',
-            'probability_no_disease': float(probabilities[0]),
-            'probability_disease': float(probabilities[1]),
-            'risk_score_percent': float(probabilities[1] * 100),
-            'status': 'success',
-            'message': 'Prédiction effectuée avec succès'
+            'success': True,
+            'prediction': prediction,
+            'prediction_label': 'Malade' if prediction == 1 else 'Sain',
+            'probability_disease': round(probability, 4),
+            'probability_no_disease': round(1 - probability, 4),
+            'risk_level': risk_level,
+            'risk_label': risk_label,
+            'risk_description': risk_description,
+            'recommendations': recommendations
         }
         
-        # 7. Log pour debug
-        print(f"📊 Prédiction: {prediction} (prob: {probabilities[1]:.3f})")
-        
         return jsonify(response), 200
-        
+    
     except Exception as e:
-        print(f"❌ Erreur: {str(e)}")
-        return jsonify({
-            'error': str(e),
-            'status': 'error',
-            'message': 'Erreur lors du traitement'
-        }), 500
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================================================
+# ENDPOINT /health
+# ============================================================================
 
 @app.route('/health', methods=['GET'])
 def health():
-    return jsonify({"status": "healthy", "service": "CardioPredict API"}), 200
+    """Endpoint de vérification de l'état du service."""
+    return jsonify({
+        'status': 'healthy',
+        'model_loaded': True,
+        'model_type': type(model).__name__
+    }), 200
+
+
+# ============================================================================
+# ENDPOINT racine
+# ============================================================================
+
+@app.route('/', methods=['GET'])
+def index():
+    """Page d'accueil simple."""
+    return jsonify({
+        'service': 'CardioPredict API',
+        'version': '1.0.0',
+        'endpoints': {
+            '/predict': 'POST - Prédiction du risque cardiovasculaire',
+            '/health': 'GET - Vérification de l\'état du service'
+        }
+    }), 200
+
+
+# ============================================================================
+# LANCEMENT
+# ============================================================================
 
 if __name__ == '__main__':
     print("\n" + "="*60)
-    print("🚀 API CardioPredict démarrée")
-    print("   URL: http://localhost:5000")
-    print("   Test: POST http://localhost:5000/predict")
+    print("🚀 Serveur Flask démarré")
     print("="*60)
+    print("📍 Endpoints disponibles :")
+    print("   - POST /predict")
+    print("   - GET  /health")
+    print("   - GET  /")
+    print("\n🔧 Pour tester :")
+    print("   curl -X POST http://localhost:5000/predict \\")
+    print("     -H 'Content-Type: application/json' \\")
+    print("     -d '{\"age\":52,\"sex\":1,\"cp\":0,\"trestbps\":125,\"chol\":212,\"fbs\":0,\"restecg\":1,\"thalach\":168,\"exang\":0,\"oldpeak\":1.0,\"slope\":2,\"ca\":2,\"thal\":3}'")
+    print("="*60)
+    
     app.run(host='0.0.0.0', port=5000, debug=True)
