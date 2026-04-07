@@ -28,7 +28,7 @@ print("="*60)
 # 1. CHARGEMENT DES DONNÉES BRUTES
 # ============================================================================
 
-df = pd.read_csv('../data/heart_disease_full.csv')
+df = pd.read_csv('../data/heart.csv')
 print(f"\n📊 Dataset chargé : {df.shape[0]} lignes, {df.shape[1]} colonnes")
 print(f"Colonnes : {list(df.columns)}")
 

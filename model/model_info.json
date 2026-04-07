@@ -1,0 +1,6 @@
+{
+    "best_model": "Random Forest (baseline)",
+    "accuracy": 0.9805194805194806,
+    "best_params": "default",
+    "cv_best_score": null
+}
