@@ -120,16 +120,16 @@ y_proba = best_rf.predict_proba(X_test)[:, 1]
 accuracy_best = accuracy_score(y_test, y_pred)
 auc_best = roc_auc_score(y_test, y_proba)
 
-print(f"\n   📊 Performance du modèle optimisé :")
+print(f"\n    Performance du modèle optimisé :")
 print(f"      Accuracy : {accuracy_best:.4f}")
 print(f"      AUC      : {auc_best:.4f}")
 
-print(f"\n   📊 Rapport de classification :")
+print(f"\n    Rapport de classification :")
 print(classification_report(y_test, y_pred, target_names=["Sain", "Malade"]))
 
 # Matrice de confusion
 cm = confusion_matrix(y_test, y_pred)
-print(f"\n   📊 Matrice de confusion :")
+print(f"\n    Matrice de confusion :")
 print(f"      Vrais Negatifs : {cm[0,0]}, Faux Positifs : {cm[0,1]}")
 print(f"      Faux Negatifs  : {cm[1,0]}, Vrais Positifs : {cm[1,1]}")
 
@@ -208,7 +208,7 @@ print("RÉSULTATS FINAUX")
 print("="*60)
 
 print(f"""
-📊 PERFORMANCES FINALES :
+ PERFORMANCES FINALES :
 
 Modèle sélectionné : {final_model_name}
 Accuracy : {final_accuracy:.4f} ({final_accuracy*100:.2f}%)

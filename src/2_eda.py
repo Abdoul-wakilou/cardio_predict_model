@@ -26,7 +26,7 @@ print("="*60)
 # ============================================================================
 
 df = pd.read_csv('../data/heart_clean_full.csv')
-print(f"\n📊 Dataset chargé : {df.shape[0]} lignes, {df.shape[1]} colonnes")
+print(f"\n Dataset chargé : {df.shape[0]} lignes, {df.shape[1]} colonnes")
 
 # ============================================================================
 # 2. DISTRIBUTION DE LA CIBLE
@@ -90,7 +90,7 @@ for col in numeric_features:
     print(f"   - Shapiro-Wilk p-value : {p_value:.4f} (distribution {normal} normale)")
 
 # Affichage du tableau
-print("\n📊 Tableau récapitulatif :")
+print("\n Tableau récapitulatif :")
 print("-"*80)
 print(f"{'Variable':<12} {'Moyenne':<10} {'Médiane':<10} {'Écart-type':<12} {'Min':<6} {'Max':<6} {'p-value':<10} {'Normale'}")
 print("-"*80)

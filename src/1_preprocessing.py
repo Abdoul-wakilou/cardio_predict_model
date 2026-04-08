@@ -29,7 +29,7 @@ print("="*60)
 # ============================================================================
 
 df = pd.read_csv('../data/heart.csv')
-print(f"\n📊 Dataset chargé : {df.shape[0]} lignes, {df.shape[1]} colonnes")
+print(f"\n Dataset chargé : {df.shape[0]} lignes, {df.shape[1]} colonnes")
 print(f"Colonnes : {list(df.columns)}")
 
 # ============================================================================
@@ -56,7 +56,7 @@ if 'thal' in df.columns:
     print(f"✅ thal : {n_thal_0} valeur(s) '0' remplacée(s) par NaN")
 
 # 2.3 Imputation par la médiane (moins de 1% de valeurs manquantes)
-print("\n📊 Imputation par la médiane :")
+print("\n Imputation par la médiane :")
 for col in ['ca', 'thal']:
     if col in df.columns:
         median_val = df[col].median()
@@ -112,8 +112,8 @@ print(f"✅ Features binaires ({len(binary_features)}) : {binary_features}")
 X = df.drop('target', axis=1)
 y = df['target']
 
-print(f"\n📊 X shape : {X.shape}")
-print(f"📊 y shape : {y.shape}")
+print(f"\n X shape : {X.shape}")
+print(f" y shape : {y.shape}")
 
 # ============================================================================
 # 6. CRÉATION DU PRÉPROCESSEUR
@@ -144,7 +144,7 @@ X_train_raw, X_test_raw, y_train, y_test = train_test_split(
     X, y, test_size=0.3, random_state=42, stratify=y
 )
 
-print(f"📊 Split effectué (70% train, 30% test) :")
+print(f" Split effectué (70% train, 30% test) :")
 print(f"   X_train_raw : {X_train_raw.shape}")
 print(f"   X_test_raw  : {X_test_raw.shape}")
 print(f"   y_train     : {y_train.shape}")
