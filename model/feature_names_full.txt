@@ -10,9 +10,9 @@ restecg_1
 restecg_2
 slope_1
 slope_2
-thal_2.0
-thal_3.0
-thal_nan
+thal_1
+thal_2
+thal_3
 sex
 fbs
 exang

@@ -1,52 +1,62 @@
 """
-app.py - API Flask pour CardioPredict
+app.py - API Flask CardioPredict avec CORS activé
 """
 
 from flask import Flask, request, jsonify
+from flask_cors import CORS  # <-- IMPORTANT : AJOUTER CETTE LIGNE
 import joblib
 import pandas as pd
-import os
 
 from src.utils import generate_recommendations, get_risk_level
 
 app = Flask(__name__)
 
-# Configuration
-MODEL_PATH = 'model/best_model_full.joblib'
-PREPROCESSOR_PATH = 'model/preprocessor_full.joblib'
+# ============================================================
+# ACTIVER CORS - AJOUTER CETTE LIGNE (TRÈS IMPORTANT)
+# ============================================================
+CORS(app)  # <-- C'EST CETTE LIGNE QUI MANQUE !
 
-# Chargement silencieux
-model = joblib.load(MODEL_PATH)
-preprocessor = joblib.load(PREPROCESSOR_PATH)
+# Alternative plus spécifique si besoin :
+# CORS(app, resources={r"/*": {"origins": "*"}})
 
-print("✅ API CardioPredict démarrée")
-print("📍 POST /predict | GET /health | GET /")
+model = joblib.load('model/best_model_full.joblib')
+preprocessor = joblib.load('model/preprocessor_full.joblib')
+
+EXPECTED_FEATURES = [
+    'age', 'sex', 'cp', 'trestbps', 'chol', 'fbs',
+    'restecg', 'thalach', 'exang', 'oldpeak', 'slope', 'ca', 'thal'
+]
+
+print("API CardioPredict démarrée — POST /predict | GET /health")
 
 
-@app.route('/predict', methods=['POST'])
+@app.route('/predict', methods=['POST', 'OPTIONS'])
 def predict():
+    # Gérer la requête preflight CORS (optionnel avec CORS(app))
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    
     try:
         data = request.get_json()
         if not data:
             return jsonify({'error': 'Aucune donnée fournie'}), 400
         
-        expected_features = ['age', 'sex', 'cp', 'trestbps', 'chol', 'fbs', 
-                             'restecg', 'thalach', 'exang', 'oldpeak', 'slope', 'ca', 'thal']
-        
-        missing = [f for f in expected_features if f not in data]
+        data = normalize_input(data)
+
+        missing = [f for f in EXPECTED_FEATURES if f not in data]
         if missing:
             return jsonify({'error': f'Features manquantes : {missing}'}), 400
-        
-        input_df = pd.DataFrame([{k: data[k] for k in expected_features}])
+
+        input_df = pd.DataFrame([{k: data[k] for k in EXPECTED_FEATURES}])
         input_processed = preprocessor.transform(input_df)
-        
+
         prediction = int(model.predict(input_processed)[0])
         probability = float(model.predict_proba(input_processed)[0][1])
-        
+
         risk_level, risk_label, risk_description = get_risk_level(prediction, probability)
         recommendations = generate_recommendations(data, prediction, probability)
-        
-        return jsonify({
+
+        response = jsonify({
             'success': True,
             'prediction': prediction,
             'prediction_label': 'Malade' if prediction == 1 else 'Sain',
@@ -56,20 +66,51 @@ def predict():
             'risk_label': risk_label,
             'risk_description': risk_description,
             'recommendations': recommendations
-        }), 200
-    
+        })
+        
+        # Ajouter les en-têtes CORS (CORS(app) le fait automatiquement, mais par sécurité)
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        
+        return response, 200
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
+def _build_cors_preflight_response():
+    """Construit la réponse pour la requête preflight OPTIONS"""
+    response = jsonify({'status': 'ok'})
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response, 200
+
+
+def normalize_input(data):
+    """Corrige les valeurs des variables catégorielles selon la norme UCI"""
+    if data.get('cp') == 0:
+        data['cp'] = 4
+    if data.get('slope') == 0:
+        data['slope'] = 3
+    if data.get('thal') == 1:
+        data['thal'] = 3
+    elif data.get('thal') == 2:
+        data['thal'] = 6
+    return data
+
+
 @app.route('/health', methods=['GET'])
 def health():
-    return jsonify({'status': 'healthy'}), 200
+    response = jsonify({'status': 'healthy'})
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response, 200
 
 
 @app.route('/', methods=['GET'])
 def index():
-    return jsonify({'service': 'CardioPredict API', 'version': '1.0.0'}), 200
+    response = jsonify({'service': 'CardioPredict API', 'version': '2.0.0'})
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response, 200
 
 
 if __name__ == '__main__':
