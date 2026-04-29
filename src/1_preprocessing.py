@@ -1,5 +1,5 @@
 """
-1_preprocessing.py - Prétraitement simplifié
+1_preprocessing.py - Prétraitement
 - Le dataset est déjà propre (pas de valeurs manquantes, target binaire)
 - Standardisation des variables numériques
 - OneHotEncoder pour variables catégorielles
@@ -25,7 +25,7 @@ print("="*60)
 # 1. CHARGEMENT
 # ============================================================================
 df = pd.read_csv('../data/heart.csv')
-print(f"\n📊 Dataset chargé : {df.shape[0]} lignes, {df.shape[1]} colonnes")
+print(f"\n Dataset chargé : {df.shape[0]} lignes, {df.shape[1]} colonnes")
 
 # ============================================================================
 # 2. VÉRIFICATION (aucune correction nécessaire)
@@ -59,7 +59,7 @@ print(f"✅ Features binaires ({len(binary_features)}) : {binary_features}")
 # ============================================================================
 X = df.drop('target', axis=1)
 y = df['target']
-print(f"\n📊 X shape : {X.shape}, y shape : {y.shape}")
+print(f"\n X shape : {X.shape}, y shape : {y.shape}")
 
 # ============================================================================
 # 5. CRÉATION DU PRÉPROCESSEUR
@@ -88,7 +88,7 @@ X_train_raw, X_test_raw, y_train, y_test = train_test_split(
     X, y, test_size=0.3, random_state=42, stratify=y
 )
 
-print(f"📊 Split effectué (70% train, 30% test) :")
+print(f" Split effectué (70% train, 30% test) :")
 print(f"   X_train_raw : {X_train_raw.shape}")
 print(f"   X_test_raw  : {X_test_raw.shape}")
 

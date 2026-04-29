@@ -1,9 +1,9 @@
 """
-app.py - API Flask CardioPredict avec CORS activé
+app.py - API Flask CardioPredict
 """
 
 from flask import Flask, request, jsonify
-from flask_cors import CORS  # <-- IMPORTANT : AJOUTER CETTE LIGNE
+from flask_cors import CORS
 import joblib
 import pandas as pd
 
@@ -11,13 +11,8 @@ from src.utils import generate_recommendations, get_risk_level
 
 app = Flask(__name__)
 
-# ============================================================
-# ACTIVER CORS - AJOUTER CETTE LIGNE (TRÈS IMPORTANT)
-# ============================================================
-CORS(app)  # <-- C'EST CETTE LIGNE QUI MANQUE !
+CORS(app)
 
-# Alternative plus spécifique si besoin :
-# CORS(app, resources={r"/*": {"origins": "*"}})
 
 model = joblib.load('model/best_model_full.joblib')
 preprocessor = joblib.load('model/preprocessor_full.joblib')
@@ -32,7 +27,7 @@ print("API CardioPredict démarrée — POST /predict | GET /health")
 
 @app.route('/predict', methods=['POST', 'OPTIONS'])
 def predict():
-    # Gérer la requête preflight CORS (optionnel avec CORS(app))
+    # Gérer la requête preflight CORS
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     
@@ -68,7 +63,7 @@ def predict():
             'recommendations': recommendations
         })
         
-        # Ajouter les en-têtes CORS (CORS(app) le fait automatiquement, mais par sécurité)
+        # Ajouter les en-têtes CORS
         response.headers.add('Access-Control-Allow-Origin', '*')
         
         return response, 200

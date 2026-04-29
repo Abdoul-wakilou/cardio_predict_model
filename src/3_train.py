@@ -25,10 +25,10 @@ X_test  = np.loadtxt('../data/X_test_preprocessed_full.csv',  delimiter=',')
 y_train = pd.read_csv('../data/y_train_full.csv')['target']
 y_test  = pd.read_csv('../data/y_test_full.csv')['target']
 
-print(f"\n📊 X_train : {X_train.shape}")
-print(f"📊 X_test  : {X_test.shape}")
-print(f"📊 y_train : {y_train.shape}")
-print(f"📊 y_test  : {y_test.shape}")
+print(f"\n X_train : {X_train.shape}")
+print(f" X_test  : {X_test.shape}")
+print(f" y_train : {y_train.shape}")
+print(f" y_test  : {y_test.shape}")
 print(f"\n✅ Nombre de features après transformation : {X_train.shape[1]}")
 
 # ============================================================================
@@ -107,15 +107,15 @@ y_proba  = best_rf.predict_proba(X_test)[:, 1]
 acc_best = accuracy_score(y_test, y_pred)
 auc_best = roc_auc_score(y_test, y_proba)
 
-print(f"\n📊 Performance du modèle optimisé :")
+print(f"\n Performance du modèle optimisé :")
 print(f"   Accuracy : {acc_best:.4f}")
 print(f"   AUC      : {auc_best:.4f}")
 
-print(f"\n📊 Rapport de classification :")
+print(f"\n Rapport de classification :")
 print(classification_report(y_test, y_pred, target_names=["Sain", "Malade"]))
 
 cm = confusion_matrix(y_test, y_pred)
-print(f"\n📊 Matrice de confusion :")
+print(f"\n Matrice de confusion :")
 print(f"   Vrais Negatifs : {cm[0,0]}, Faux Positifs : {cm[0,1]}")
 print(f"   Faux Negatifs  : {cm[1,0]}, Vrais Positifs : {cm[1,1]}")
 
