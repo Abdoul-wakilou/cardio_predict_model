@@ -3,6 +3,7 @@ trestbps
 chol
 thalach
 oldpeak
+ca
 cp_1
 cp_2
 cp_3
@@ -12,7 +13,6 @@ slope_1
 slope_2
 thal_1
 thal_2
-thal_3
 sex
 fbs
 exang
