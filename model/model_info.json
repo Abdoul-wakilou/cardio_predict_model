@@ -1,0 +1,17 @@
+{
+    "dataset": "heart_uci_combined.csv",
+    "n_patients_train": 583,
+    "n_patients_test": 251,
+    "best_model": "Random Forest (optimis\u00e9)",
+    "accuracy": 0.9282868525896414,
+    "auc": 0.9796377183967112,
+    "sensitivity": 0.9496402877697842,
+    "specificity": 0.9017857142857143,
+    "best_params": {
+        "max_depth": null,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 200
+    },
+    "cv_best_score": 0.9193486590038316
+}
