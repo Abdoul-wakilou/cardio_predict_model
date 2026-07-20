@@ -41,5 +41,3 @@ L'objectif principal est de concevoir :
 | Communication | API REST (JSON) |
 
 ---
-
-## 📁 Structure du projet
