@@ -66,7 +66,7 @@ Les données manquantes sont massives et dépendent du centre : `ca` manque pour
 
 ![Valeurs manquantes par centre](reports/figures/valeurs_manquantes_par_centre.png)
 
-Un jeu nettoyé est publié sur [Kaggle](https://www.kaggle.com/abdoulwakiloutiga) sous licence CC BY 4.0. La version publiée avant cette révision contient l'ancienne imputation décrite plus bas : le fichier de référence est celui de ce dépôt.
+Ce jeu est publié sur [Kaggle](https://www.kaggle.com/datasets/abdoulwakiloutiga/uci-heart-disease-clean-combined-dataset) et décrit dans sa [fiche](data/README.md). La version 1 contient l'ancienne imputation décrite plus bas ; la version 2 reprend le fichier de ce dépôt, non imputé.
 
 ## Méthodologie
 
