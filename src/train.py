@@ -157,12 +157,12 @@ print("\n" + "=" * 60)
 print("SAUVEGARDE")
 print("=" * 60)
 
-joblib.dump(final_model, '../model/best_model_full.joblib')
+joblib.dump(final_model, '../models/best_model_full.joblib')
 # Sauvegarder aussi les baselines pour 4_evaluate.py
 joblib.dump(baseline_results['Régression Logistique']['model'],
-            '../model/best_model_lr.joblib')
+            '../models/best_model_lr.joblib')
 joblib.dump(baseline_results['SVM']['model'],
-            '../model/best_model_svm.joblib')
+            '../models/best_model_svm.joblib')
 print("  ✅ Modèles sauvegardés (RF, LR, SVM)")
 
 params = {
@@ -177,7 +177,7 @@ params = {
     'best_params':      grid_search.best_params_,
     'cv_best_score':    float(grid_search.best_score_),
 }
-with open('../model/model_info.json', 'w') as f:
+with open('../models/model_info.json', 'w') as f:
     json.dump(params, f, indent=4)
 print("  ✅ model_info.json sauvegardé")
 

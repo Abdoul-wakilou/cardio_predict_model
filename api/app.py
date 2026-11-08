@@ -18,14 +18,14 @@ from flask_cors import CORS
 import joblib
 import pandas as pd
 
-from src.utils import generate_recommendations, get_risk_level
+from api.recommendations import generate_recommendations, get_risk_level
 
 app = Flask(__name__)
 CORS(app)
 
 # Chargement au démarrage (une seule fois)
-model        = joblib.load('model/best_model_full.joblib')
-preprocessor = joblib.load('model/preprocessor_full.joblib')
+model        = joblib.load('models/best_model_full.joblib')
+preprocessor = joblib.load('models/preprocessor_full.joblib')
 
 # Les 13 features dans l'ordre exact attendu par le préprocesseur
 EXPECTED_FEATURES = [

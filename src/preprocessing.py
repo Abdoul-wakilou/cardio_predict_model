@@ -19,7 +19,7 @@ import joblib
 import os
 
 os.makedirs('../data',  exist_ok=True)
-os.makedirs('../model', exist_ok=True)
+os.makedirs('../models', exist_ok=True)
 
 print("=" * 60)
 print("PRÉTRAITEMENT — UCI HEART DISEASE COMBINÉ (834 patients)")
@@ -28,7 +28,7 @@ print("=" * 60)
 # ============================================================================
 # 1. CHARGEMENT
 # ============================================================================
-df = pd.read_csv('../data/heart_uci_combined.csv')
+df = pd.read_csv('../data/processed/heart_uci_combined.csv')
 print(f"\n✅ Dataset chargé : {df.shape[0]} lignes, {df.shape[1]} colonnes")
 
 # ============================================================================
@@ -151,10 +151,10 @@ y_train.to_csv('../data/y_train_full.csv', index=False)
 y_test.to_csv( '../data/y_test_full.csv',  index=False)
 print("  ✅ Données prétraitées sauvegardées")
 
-joblib.dump(preprocessor, '../model/preprocessor_full.joblib')
+joblib.dump(preprocessor, '../models/preprocessor_full.joblib')
 print("  ✅ Préprocesseur sauvegardé : model/preprocessor_full.joblib")
 
-with open('../model/feature_names_full.txt', 'w') as f:
+with open('../models/feature_names_full.txt', 'w') as f:
     for name in all_feature_names:
         f.write(f"{name}\n")
 print(f"  ✅ {len(all_feature_names)} noms de features sauvegardés")

@@ -17,7 +17,7 @@ from sklearn.metrics import (
 )
 import os
 
-os.makedirs('../images', exist_ok=True)
+os.makedirs('../reports/figures', exist_ok=True)
 
 print("="*60)
 print("ÉVALUATION DES MODÈLES - POST ENTRAÎNEMENT")
@@ -42,7 +42,7 @@ print(f"   y_test shape : {y_test.shape}")
 print("\n2️⃣ CHARGEMENT DES MODÈLES")
 
 # Modèle final (Random Forest)
-model_rf = joblib.load('../model/best_model_full.joblib')
+model_rf = joblib.load('../models/best_model_full.joblib')
 print(f"   ✅ Random Forest chargé : {type(model_rf).__name__}")
 
 # Pour la comparaison, nous devons également charger les modèles baseline
@@ -50,8 +50,8 @@ print(f"   ✅ Random Forest chargé : {type(model_rf).__name__}")
 
 # Option 1 : Charger depuis des fichiers séparés (si sauvegardés)
 try:
-    model_lr = joblib.load('../model/best_model_lr.joblib')
-    model_svm = joblib.load('../model/best_model_svm.joblib')
+    model_lr = joblib.load('../models/best_model_lr.joblib')
+    model_svm = joblib.load('../models/best_model_svm.joblib')
     print("   ✅ Modèles baseline chargés depuis les fichiers")
 except:
     print("   ⚠️ Modèles baseline non trouvés, ré-entraînement rapide...")
@@ -121,7 +121,7 @@ for idx, (name, _, y_pred) in enumerate(models_confusion):
     axes[idx].set_title(f'Matrice de confusion - {name}', fontsize=12)
 
 plt.tight_layout()
-plt.savefig('../images/matrices_confusion.png', dpi=300, bbox_inches='tight')
+plt.savefig('../reports/figures/matrices_confusion.png', dpi=300, bbox_inches='tight')
 plt.close()
 print("✅ Figure sauvegardée : images/matrices_confusion.png")
 
@@ -164,7 +164,7 @@ plt.title('Courbes ROC comparatives des trois modèles', fontsize=14)
 plt.legend(loc='lower right', fontsize=11)
 plt.grid(alpha=0.3)
 plt.tight_layout()
-plt.savefig('../images/courbe_roc_comparative.png', dpi=300, bbox_inches='tight')
+plt.savefig('../reports/figures/courbe_roc_comparative.png', dpi=300, bbox_inches='tight')
 plt.close()
 print("✅ Figure sauvegardée : images/courbe_roc_comparative.png")
 
@@ -177,7 +177,7 @@ if hasattr(model_rf, 'feature_importances_'):
     
     # Charger les noms des features
     try:
-        with open('../model/feature_names_full.txt', 'r') as f:
+        with open('../models/feature_names_full.txt', 'r') as f:
             feature_names = [line.strip() for line in f.readlines()]
     except:
         feature_names = [f'Feature_{i}' for i in range(X_test.shape[1])]
@@ -205,7 +205,7 @@ if hasattr(model_rf, 'feature_importances_'):
     plt.ylabel('Feature', fontsize=12)
     plt.title('Importance des features - Random Forest', fontsize=14)
     plt.tight_layout()
-    plt.savefig('../images/feature_importance.png', dpi=300, bbox_inches='tight')
+    plt.savefig('../reports/figures/feature_importance.png', dpi=300, bbox_inches='tight')
     plt.close()
     print("\n✅ Figure sauvegardée : images/feature_importance.png")
 

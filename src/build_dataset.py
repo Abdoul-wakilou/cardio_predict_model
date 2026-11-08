@@ -253,7 +253,7 @@ else:
 # ÉTAPE 7 : Sauvegarde
 # ============================================================================
 df_out = df[cols_14]   # sans la colonne 'source'
-df_out.to_csv('../data/heart_uci_combined.csv', index=False)
+df_out.to_csv('../data/processed/heart_uci_combined.csv', index=False)
 print(f"\n{'=' * 60}")
 print(f'✅ Dataset sauvegardé : ../data/heart_uci_combined.csv')
 print(f'   {len(df_out)} patients, {len(df_out.columns)} colonnes')
@@ -261,4 +261,4 @@ print(f"{'=' * 60}")
 print('\n→ Dans 1_preprocessing.py, remplace :')
 print("     df = pd.read_csv('../data/heart.csv')")
 print('  par :')
-print("     df = pd.read_csv('../data/heart_uci_combined.csv')")
+print("     df = pd.read_csv('../data/processed/heart_uci_combined.csv')")

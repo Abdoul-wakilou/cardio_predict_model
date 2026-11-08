@@ -17,7 +17,7 @@ import numpy as np
 from scipy import stats
 import os
 
-os.makedirs('../images', exist_ok=True)
+os.makedirs('../reports/figures', exist_ok=True)
 
 print("=" * 60)
 print("ANALYSE EXPLORATOIRE — UCI HEART DISEASE (834 patients)")
@@ -51,7 +51,7 @@ ax.set_ylabel('Nombre de patients')
 for i, (v, p) in enumerate(zip(tc.values, pct.values)):
     ax.text(i, v + 8, f'{v}\n({p:.1f}%)', ha='center', fontweight='bold')
 plt.tight_layout()
-plt.savefig('../images/distribution_cible.png', dpi=300, bbox_inches='tight')
+plt.savefig('../reports/figures/distribution_cible.png', dpi=300, bbox_inches='tight')
 plt.close()
 print("  Figure sauvegardée : images/distribution_cible.png")
 
@@ -85,7 +85,7 @@ for i, col in enumerate(numeric_features):
 axes[-1].set_visible(False)
 plt.suptitle('Distribution des variables numériques', fontsize=14)
 plt.tight_layout()
-plt.savefig('../images/histogrammes_numeriques.png', dpi=300, bbox_inches='tight')
+plt.savefig('../reports/figures/histogrammes_numeriques.png', dpi=300, bbox_inches='tight')
 plt.close()
 print("  Figure sauvegardée : images/histogrammes_numeriques.png")
 
@@ -150,7 +150,7 @@ for i, col in enumerate(numeric_features):
 axes[-1].set_visible(False)
 plt.suptitle('Distribution des variables numériques par diagnostic', fontsize=14)
 plt.tight_layout()
-plt.savefig('../images/boxplots_numeriques.png', dpi=300, bbox_inches='tight')
+plt.savefig('../reports/figures/boxplots_numeriques.png', dpi=300, bbox_inches='tight')
 plt.close()
 print("\n  Figure sauvegardée : images/boxplots_numeriques.png")
 
@@ -177,7 +177,7 @@ sns.heatmap(corr_matrix, annot=True, fmt='.2f',
             linewidths=0.5)
 plt.title('Matrice de corrélation — variables numériques + ca', fontsize=13)
 plt.tight_layout()
-plt.savefig('../images/matrice_correlation.png', dpi=300, bbox_inches='tight')
+plt.savefig('../reports/figures/matrice_correlation.png', dpi=300, bbox_inches='tight')
 plt.close()
 print("  Figure sauvegardée : images/matrice_correlation.png")
 
