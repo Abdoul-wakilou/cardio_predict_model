@@ -1,0 +1,81 @@
+{
+  "regle": "Sensibilité moyenne maximale en validation croisée 5 plis sur le train, sous contrainte de spécificité >= 0.7, AUC en départage.",
+  "modele_retenu": "svm",
+  "candidats": {
+    "regression_logistique": {
+      "parametres": {
+        "C": 0.1,
+        "class_weight": null
+      },
+      "validation_croisee": {
+        "sensibilite": {
+          "moyenne": 0.8489423076923078,
+          "ecart_type": 0.06530566500432261
+        },
+        "specificite": {
+          "moyenne": 0.7799396681749622,
+          "ecart_type": 0.05092681504668186
+        },
+        "accuracy": {
+          "moyenne": 0.8182434423813734,
+          "ecart_type": 0.033633417139077276
+        },
+        "auc": {
+          "moyenne": 0.8804057532776424,
+          "ecart_type": 0.029654488115855318
+        }
+      }
+    },
+    "svm": {
+      "parametres": {
+        "C": 10,
+        "class_weight": null,
+        "gamma": "scale"
+      },
+      "validation_croisee": {
+        "sensibilite": {
+          "moyenne": 0.8674519230769231,
+          "ecart_type": 0.04386228195279524
+        },
+        "specificite": {
+          "moyenne": 0.7374811463046758,
+          "ecart_type": 0.008365263724803671
+        },
+        "accuracy": {
+          "moyenne": 0.8096522251694666,
+          "ecart_type": 0.02347353831878894
+        },
+        "auc": {
+          "moyenne": 0.8493721356885949,
+          "ecart_type": 0.03161439537116096
+        }
+      }
+    },
+    "random_forest": {
+      "parametres": {
+        "class_weight": "balanced",
+        "max_depth": null,
+        "min_samples_leaf": 1,
+        "n_estimators": 100
+      },
+      "validation_croisee": {
+        "sensibilite": {
+          "moyenne": 0.8642788461538462,
+          "ecart_type": 0.02612289599692715
+        },
+        "specificite": {
+          "moyenne": 0.7374811463046758,
+          "ecart_type": 0.03324876833456236
+        },
+        "accuracy": {
+          "moyenne": 0.8079428234600649,
+          "ecart_type": 0.02158962587506647
+        },
+        "auc": {
+          "moyenne": 0.8850796206056387,
+          "ecart_type": 0.022352094888422467
+        }
+      }
+    }
+  }
+}

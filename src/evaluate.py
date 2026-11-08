@@ -1,260 +1,196 @@
-"""
-4_evaluate.py - Évaluation complète des modèles après entraînement
-- Courbes ROC comparatives (3 modèles)
-- Matrices de confusion
-- Importance des features (Random Forest)
-- Métriques détaillées
-"""
+"""Évalue les modèles sur le jeu de test, mis de côté jusqu'à cette étape."""
 
-import pandas as pd
-import numpy as np
+import json
+import logging
+
 import joblib
 import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.metrics import (
-    roc_curve, roc_auc_score, confusion_matrix, 
-    classification_report, ConfusionMatrixDisplay
+import numpy as np
+from sklearn.base import clone
+from sklearn.calibration import calibration_curve
+from sklearn.inspection import permutation_importance
+from sklearn.metrics import ConfusionMatrixDisplay, roc_curve
+
+from src.config import (
+    FEATURE_ORDER,
+    METADATA_PATH,
+    MODEL_PATH,
+    RANDOM_STATE,
+    SELECTION_PATH,
+    TEST_RESULTS_PATH,
 )
-import os
+from src.figures import BLUE, MODEL_STYLES, apply_style, save_figure
+from src.modeling import CANDIDATES, MODEL_NAMES, build_pipeline, compute_metrics
+from src.preprocessing import load_dataset, split_dataset
 
-os.makedirs('../reports/figures', exist_ok=True)
+logger = logging.getLogger(__name__)
 
-print("="*60)
-print("ÉVALUATION DES MODÈLES - POST ENTRAÎNEMENT")
-print("="*60)
+N_BOOTSTRAP = 2000
+INTERVAL_METRICS = ("accuracy", "auc", "sensibilite", "specificite")
 
-# ============================================================================
-# 1. CHARGEMENT DES DONNÉES
-# ============================================================================
 
-print("\n1️⃣ CHARGEMENT DES DONNÉES")
+def fit_candidate(name, parameters, X_train, y_train):
+    """Réentraîne un candidat sur le train avec ses paramètres sélectionnés."""
+    pipeline = build_pipeline(clone(CANDIDATES[name][0]))
+    pipeline.set_params(**{f"model__{key}": value for key, value in parameters.items()})
+    return pipeline.fit(X_train, y_train)
 
-X_test = np.loadtxt('../data/X_test_preprocessed_full.csv', delimiter=',')
-y_test = pd.read_csv('../data/y_test_full.csv')['target']
 
-print(f"   X_test shape : {X_test.shape}")
-print(f"   y_test shape : {y_test.shape}")
+def bootstrap_intervals(y_true, probabilities):
+    """Estime les intervalles de confiance à 95 % par rééchantillonnage des patients."""
+    y_true, probabilities = np.asarray(y_true), np.asarray(probabilities)
+    rng = np.random.default_rng(RANDOM_STATE)
+    samples = {metric: [] for metric in INTERVAL_METRICS}
+    while len(samples["auc"]) < N_BOOTSTRAP:
+        indices = rng.integers(0, y_true.size, y_true.size)
+        if np.unique(y_true[indices]).size < 2:
+            continue
+        metrics = compute_metrics(y_true[indices], probabilities[indices])
+        for metric in INTERVAL_METRICS:
+            samples[metric].append(metrics[metric])
+    return {
+        metric: [float(value) for value in np.percentile(values, [2.5, 97.5])]
+        for metric, values in samples.items()
+    }
 
-# ============================================================================
-# 2. CHARGEMENT DES TROIS MODÈLES
-# ============================================================================
 
-print("\n2️⃣ CHARGEMENT DES MODÈLES")
+def plot_confusion_matrices(y_test, probabilities_by_model):
+    """Trace une matrice de confusion par modèle."""
+    figure, axes = plt.subplots(1, 3, figsize=(13, 4.2))
+    for axis, (name, probabilities) in zip(axes, probabilities_by_model.items(), strict=True):
+        ConfusionMatrixDisplay.from_predictions(
+            y_test,
+            (probabilities >= 0.5).astype(int),
+            display_labels=["Sain", "Malade"],
+            cmap="Blues",
+            colorbar=False,
+            ax=axis,
+        )
+        axis.set_title(MODEL_NAMES[name])
+        axis.set_xlabel("Classe prédite")
+        axis.set_ylabel("Classe réelle")
+        axis.grid(False)
+    save_figure(figure, "matrices_confusion.png")
 
-# Modèle final (Random Forest)
-model_rf = joblib.load('../models/best_model_full.joblib')
-print(f"   ✅ Random Forest chargé : {type(model_rf).__name__}")
 
-# Pour la comparaison, nous devons également charger les modèles baseline
-# Si les modèles baseline ne sont pas sauvegardés, on les ré-entraîne rapidement
+def plot_roc_curves(y_test, probabilities_by_model, results):
+    """Compare les courbes ROC des trois modèles."""
+    figure, axis = plt.subplots(figsize=(7.5, 6))
+    for name, probabilities in probabilities_by_model.items():
+        fpr, tpr, _ = roc_curve(y_test, probabilities)
+        label = f"{MODEL_NAMES[name]} (AUC = {results[name]['auc']:.3f})"
+        axis.plot(fpr, tpr, label=label, **MODEL_STYLES[name])
+    axis.plot([0, 1], [0, 1], color="#9a9890", linewidth=1, label="Hasard (AUC = 0.5)")
+    axis.set_xlabel("1 − spécificité")
+    axis.set_ylabel("Sensibilité")
+    axis.legend(loc="lower right", frameon=False)
+    save_figure(figure, "courbe_roc_comparative.png")
 
-# Option 1 : Charger depuis des fichiers séparés (si sauvegardés)
-try:
-    model_lr = joblib.load('../models/best_model_lr.joblib')
-    model_svm = joblib.load('../models/best_model_svm.joblib')
-    print("   ✅ Modèles baseline chargés depuis les fichiers")
-except:
-    print("   ⚠️ Modèles baseline non trouvés, ré-entraînement rapide...")
-    
-    # Ré-entraîner les modèles baseline
-    X_train = np.loadtxt('../data/X_train_preprocessed_full.csv', delimiter=',')
-    y_train = pd.read_csv('../data/y_train_full.csv')['target']
-    
-    from sklearn.linear_model import LogisticRegression
-    from sklearn.svm import SVC
-    
-    model_lr = LogisticRegression(random_state=42, max_iter=1000)
-    model_lr.fit(X_train, y_train)
-    
-    model_svm = SVC(random_state=42, probability=True)
-    model_svm.fit(X_train, y_train)
-    
-    print("   ✅ Modèles baseline ré-entraînés")
 
-# ============================================================================
-# 3. PRÉDICTIONS ET PROBABILITÉS
-# ============================================================================
+def assess_calibration(y_test, probabilities, name):
+    """Compare les probabilités annoncées aux fréquences observées."""
+    observed, predicted = calibration_curve(y_test, probabilities, n_bins=5, strategy="quantile")
+    figure, axis = plt.subplots(figsize=(6, 5.5))
+    axis.plot([0, 1], [0, 1], color="#9a9890", linewidth=1, label="Calibration parfaite")
+    axis.plot(predicted, observed, marker="o", markersize=8, label=MODEL_NAMES[name], color=BLUE)
+    axis.set_xlabel("Probabilité moyenne prédite")
+    axis.set_ylabel("Fréquence observée de la maladie")
+    axis.legend(loc="upper left", frameon=False)
+    save_figure(figure, "courbe_calibration.png")
+    return {
+        "probabilite_predite": [float(value) for value in predicted],
+        "frequence_observee": [float(value) for value in observed],
+    }
 
-print("\n3️⃣ PRÉDICTIONS ET PROBABILITÉS")
 
-# Random Forest
-y_pred_rf = model_rf.predict(X_test)
-y_proba_rf = model_rf.predict_proba(X_test)[:, 1]
-acc_rf = (y_pred_rf == y_test).mean()
-auc_rf = roc_auc_score(y_test, y_proba_rf)
+def assess_importance(model, X_test, y_test):
+    """Mesure la perte d'AUC quand chaque variable clinique est permutée."""
+    result = permutation_importance(
+        model, X_test, y_test, scoring="roc_auc", n_repeats=30, random_state=RANDOM_STATE
+    )
+    order = np.argsort(result.importances_mean)
+    figure, axis = plt.subplots(figsize=(7.5, 5.5))
+    axis.barh(
+        np.array(FEATURE_ORDER)[order],
+        result.importances_mean[order],
+        xerr=result.importances_std[order],
+        color=BLUE,
+        height=0.55,
+        error_kw={"ecolor": "#52514e", "elinewidth": 1},
+    )
+    axis.set_xlabel("Baisse moyenne de l'AUC après permutation")
+    axis.grid(axis="y", visible=False)
+    save_figure(figure, "importance_permutation.png")
+    ranking = sorted(
+        zip(FEATURE_ORDER, result.importances_mean, result.importances_std, strict=True),
+        key=lambda item: -item[1],
+    )
+    return [
+        {"variable": variable, "baisse_auc": float(mean), "ecart_type": float(std)}
+        for variable, mean, std in ranking
+    ]
 
-# Régression Logistique
-y_pred_lr = model_lr.predict(X_test)
-y_proba_lr = model_lr.predict_proba(X_test)[:, 1]
-acc_lr = (y_pred_lr == y_test).mean()
-auc_lr = roc_auc_score(y_test, y_proba_lr)
 
-# SVM
-y_pred_svm = model_svm.predict(X_test)
-y_proba_svm = model_svm.predict_proba(X_test)[:, 1]
-acc_svm = (y_pred_svm == y_test).mean()
-auc_svm = roc_auc_score(y_test, y_proba_svm)
+def main():
+    """Produit les métriques finales, les figures et complète les métadonnées."""
+    apply_style()
+    selection = json.loads(SELECTION_PATH.read_text(encoding="utf-8"))
+    selected = selection["modele_retenu"]
+    X_train, X_test, y_train, y_test = split_dataset(load_dataset())
 
-print(f"\n   📊 Résultats sur le test set :")
-print(f"   Régression Logistique : Accuracy = {acc_lr:.4f}, AUC = {auc_lr:.4f}")
-print(f"   SVM                   : Accuracy = {acc_svm:.4f}, AUC = {auc_svm:.4f}")
-print(f"   Random Forest         : Accuracy = {acc_rf:.4f}, AUC = {auc_rf:.4f}")
+    models = {
+        name: fit_candidate(name, summary["parametres"], X_train, y_train)
+        for name, summary in selection["candidats"].items()
+        if name != selected
+    }
+    # Le modèle retenu est relu depuis son artefact : je mesure ce que l'API sert.
+    models[selected] = joblib.load(MODEL_PATH)
 
-# ============================================================================
-# 4. MATRICES DE CONFUSION (les trois)
-# ============================================================================
+    probabilities = {
+        name: models[name].predict_proba(X_test)[:, 1] for name in selection["candidats"]
+    }
+    results = {
+        name: {
+            **compute_metrics(y_test, values),
+            "intervalle_confiance_95": bootstrap_intervals(y_test, values),
+        }
+        for name, values in probabilities.items()
+    }
+    for name, metrics in results.items():
+        logger.info(
+            "%-22s acc=%.4f auc=%.4f sens=%.4f spec=%.4f brier=%.4f %s",
+            MODEL_NAMES[name],
+            metrics["accuracy"],
+            metrics["auc"],
+            metrics["sensibilite"],
+            metrics["specificite"],
+            metrics["brier"],
+            metrics["matrice_confusion"],
+        )
 
-print("\n4️⃣ MATRICES DE CONFUSION")
+    plot_confusion_matrices(y_test, probabilities)
+    plot_roc_curves(y_test, probabilities, results)
+    calibration = assess_calibration(y_test, probabilities[selected], selected)
+    importance = assess_importance(models[selected], X_test, y_test)
 
-models_confusion = [
-    ("Régression Logistique", model_lr, y_pred_lr),
-    ("SVM", model_svm, y_pred_svm),
-    ("Random Forest", model_rf, y_pred_rf)
-]
+    TEST_RESULTS_PATH.write_text(
+        json.dumps(
+            {
+                "modele_retenu": selected,
+                "modeles": results,
+                "calibration": calibration,
+                "importance_permutation": importance,
+            },
+            indent=2,
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    metadata = json.loads(METADATA_PATH.read_text(encoding="utf-8"))
+    metadata["resultats_test"] = results[selected]
+    METADATA_PATH.write_text(json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8")
 
-fig, axes = plt.subplots(1, 3, figsize=(15, 5))
 
-for idx, (name, _, y_pred) in enumerate(models_confusion):
-    cm = confusion_matrix(y_test, y_pred)
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Sain", "Malade"])
-    disp.plot(ax=axes[idx], cmap='Blues', values_format='d')
-    axes[idx].set_title(f'Matrice de confusion - {name}', fontsize=12)
-
-plt.tight_layout()
-plt.savefig('../reports/figures/matrices_confusion.png', dpi=300, bbox_inches='tight')
-plt.close()
-print("✅ Figure sauvegardée : images/matrices_confusion.png")
-
-# ============================================================================
-# 5. COURBE ROC COMPARATIVE (LES TROIS MODÈLES)
-# ============================================================================
-
-print("\n5️⃣ COURBE ROC COMPARATIVE")
-
-# Calcul des courbes ROC
-fpr_lr, tpr_lr, _ = roc_curve(y_test, y_proba_lr)
-fpr_svm, tpr_svm, _ = roc_curve(y_test, y_proba_svm)
-fpr_rf, tpr_rf, _ = roc_curve(y_test, y_proba_rf)
-
-# Création du graphique
-plt.figure(figsize=(9, 7))
-
-# Courbe pour la Régression Logistique
-plt.plot(fpr_lr, tpr_lr, linewidth=2, 
-         label=f'Régression Logistique (AUC = {auc_lr:.4f})', 
-         color='#3498db', linestyle='-')
-
-# Courbe pour SVM
-plt.plot(fpr_svm, tpr_svm, linewidth=2, 
-         label=f'SVM (AUC = {auc_svm:.4f})', 
-         color='#e67e22', linestyle='--')
-
-# Courbe pour Random Forest
-plt.plot(fpr_rf, tpr_rf, linewidth=2, 
-         label=f'Random Forest (AUC = {auc_rf:.4f})', 
-         color='#2ecc71', linestyle='-')
-
-# Ligne aléatoire (diagonale)
-plt.plot([0, 1], [0, 1], 'k--', linewidth=1, label='Modèle aléatoire (AUC = 0.5)')
-
-# Configuration du graphique
-plt.xlabel('Taux de faux positifs (1 - Spécificité)', fontsize=12)
-plt.ylabel('Taux de vrais positifs (Sensibilité)', fontsize=12)
-plt.title('Courbes ROC comparatives des trois modèles', fontsize=14)
-plt.legend(loc='lower right', fontsize=11)
-plt.grid(alpha=0.3)
-plt.tight_layout()
-plt.savefig('../reports/figures/courbe_roc_comparative.png', dpi=300, bbox_inches='tight')
-plt.close()
-print("✅ Figure sauvegardée : images/courbe_roc_comparative.png")
-
-# ============================================================================
-# 6. IMPORTANCE DES FEATURES (Random Forest)
-# ============================================================================
-
-if hasattr(model_rf, 'feature_importances_'):
-    print("\n6️⃣ IMPORTANCE DES FEATURES")
-    
-    # Charger les noms des features
-    try:
-        with open('../models/feature_names_full.txt', 'r') as f:
-            feature_names = [line.strip() for line in f.readlines()]
-    except:
-        feature_names = [f'Feature_{i}' for i in range(X_test.shape[1])]
-    
-    # S'assurer que le nombre de noms correspond
-    if len(feature_names) != len(model_rf.feature_importances_):
-        feature_names = [f'Feature_{i}' for i in range(len(model_rf.feature_importances_))]
-    
-    # Trier par importance
-    importance_df = pd.DataFrame({
-        'feature': feature_names,
-        'importance': model_rf.feature_importances_
-    }).sort_values('importance', ascending=False)
-    
-    # Affichage console
-    print("\n   Top 10 des features les plus importantes :")
-    for i, row in importance_df.head(10).iterrows():
-        print(f"      {row['feature']:<25} : {row['importance']:.4f}")
-    
-    # Figure
-    plt.figure(figsize=(10, 8))
-    top_features = importance_df.head(15)
-    sns.barplot(data=top_features, y='feature', x='importance', palette='viridis')
-    plt.xlabel('Importance', fontsize=12)
-    plt.ylabel('Feature', fontsize=12)
-    plt.title('Importance des features - Random Forest', fontsize=14)
-    plt.tight_layout()
-    plt.savefig('../reports/figures/feature_importance.png', dpi=300, bbox_inches='tight')
-    plt.close()
-    print("\n✅ Figure sauvegardée : images/feature_importance.png")
-
-# ============================================================================
-# 7. RAPPORT DE CLASSIFICATION DÉTAILLÉ
-# ============================================================================
-
-print("\n7️⃣ RAPPORT DE CLASSIFICATION")
-
-print("\n--- Régression Logistique ---")
-print(classification_report(y_test, y_pred_lr, target_names=["Sain", "Malade"]))
-
-print("\n--- SVM ---")
-print(classification_report(y_test, y_pred_svm, target_names=["Sain", "Malade"]))
-
-print("\n--- Random Forest ---")
-print(classification_report(y_test, y_pred_rf, target_names=["Sain", "Malade"]))
-
-# ============================================================================
-# 8. RÉCAPITULATIF DES MÉTRIQUES
-# ============================================================================
-
-print("\n" + "="*60)
-print("RÉCAPITULATIF DES MÉTRIQUES")
-print("="*60)
-
-def compute_metrics(y_true, y_pred):
-    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
-    sensitivity = tp / (tp + fn) if (tp + fn) > 0 else 0
-    specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
-    precision = tp / (tp + fp) if (tp + fp) > 0 else 0
-    f1 = 2 * (precision * sensitivity) / (precision + sensitivity) if (precision + sensitivity) > 0 else 0
-    accuracy = (tp + tn) / (tp + tn + fp + fn)
-    return accuracy, sensitivity, specificity, precision, f1
-
-print("\n┌─────────────────────┬──────────┬────────────┬────────────┬───────────┬───────────┐")
-print("│ Modèle              │ Accuracy │ Sensibilité│ Spécificité│ Précision │ F1-score  │")
-print("├─────────────────────┼──────────┼────────────┼────────────┼───────────┼───────────┤")
-
-acc_lr, sens_lr, spec_lr, prec_lr, f1_lr = compute_metrics(y_test, y_pred_lr)
-print(f"│ Régression Logistique │ {acc_lr:.4f}   │ {sens_lr:.4f}     │ {spec_lr:.4f}     │ {prec_lr:.4f}    │ {f1_lr:.4f}    │")
-
-acc_svm, sens_svm, spec_svm, prec_svm, f1_svm = compute_metrics(y_test, y_pred_svm)
-print(f"│ SVM                 │ {acc_svm:.4f}   │ {sens_svm:.4f}     │ {spec_svm:.4f}     │ {prec_svm:.4f}    │ {f1_svm:.4f}    │")
-
-acc_rf, sens_rf, spec_rf, prec_rf, f1_rf = compute_metrics(y_test, y_pred_rf)
-print(f"│ Random Forest       │ {acc_rf:.4f}   │ {sens_rf:.4f}     │ {spec_rf:.4f}     │ {prec_rf:.4f}    │ {f1_rf:.4f}    │")
-print("└─────────────────────┴──────────┴────────────┴────────────┴───────────┴───────────┘")
-
-print("\n" + "="*60)
-print("✅ ÉVALUATION TERMINÉE")
-print("="*60)
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    main()
