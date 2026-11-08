@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "Si vous utilisez ce travail, merci de le citer comme indiqué ci-dessous."
+type: software
+title: "CardioPredict : modèle de prédiction du risque cardiovasculaire et API Flask"
+authors:
+  - family-names: TIGA
+    given-names: Abdoul-Wakilou
+    email: abdoulwakiloutiga@gmail.com
+repository-code: "https://github.com/Abdoul-wakilou/cardio_predict_model"
+license: MIT
+version: 4.0.0
+date-released: 2026-11-08
+keywords:
+  - risque cardiovasculaire
+  - apprentissage automatique
+  - UCI Heart Disease
+  - scikit-learn
+  - Flask
+references:
+  - type: thesis
+    title: "Développement d'un modèle d'intelligence artificielle pour la prédiction du risque cardiovasculaire et son intégration dans une application mobile"
+    authors:
+      - family-names: TIGA
+        given-names: Abdoul-Wakilou
+    thesis-type: "Mémoire de Master en Génie Logiciel"
+    institution:
+      name: "Institut de Formation et de Recherche en Informatique (IFRI), Université d'Abomey-Calavi"
+    year: 2026
