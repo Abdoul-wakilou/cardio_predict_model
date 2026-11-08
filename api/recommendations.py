@@ -1,257 +1,199 @@
+"""Messages de prévention associés à une prédiction.
+
+Le modèle ne pose pas de diagnostic : les textes parlent de signaux à vérifier
+et orientent vers un professionnel, sans nommer de traitement.
+
+Encodage : cp 0=typique, 3=asymptomatique ; thal 1=défaut fixe, 2=défaut réversible.
 """
-utils.py — Recommandations médicales CardioPredict v3.0
-=========================================================
-Encodage 0-based :
-  cp    : 0=typique, 1=atypique, 2=non-angineuse, 3=asymptomatique
-  slope : 0=ascendante, 1=plate, 2=descendante
-  thal  : 0=normal, 1=défaut fixe, 2=défaut réversible
-"""
+
+EMERGENCY_ADVICE = "En cas de douleur thoracique ou d'essoufflement brutal, appelez les urgences."
 
 
-def generate_recommendations(patient_data, prediction, probability):
-    """
-    Génère des recommandations médicales personnalisées et concises
-    basées sur les facteurs de risque individuels du patient.
-    """
-    recommendations = []
-
-    # =========================================================================
-    # 1. ÂGE
-    # =========================================================================
-    age = patient_data.get('age', 0)
+def _age_advice(age):
     if age > 65:
-        recommendations.append(
-            f"Âge avancé ({age} ans) : bilan annuel (ECG, lipides, glycémie). "
-            "Marche 30 min/jour, alimentation riche en fruits et légumes, "
-            "réduire le sel et les graisses saturées."
+        return (
+            f"Âge ({age} ans) : bilan annuel conseillé (ECG, lipides, glycémie). "
+            "Marche 30 min/jour, fruits et légumes, moins de sel et de graisses saturées."
         )
-    elif age > 50:
-        recommendations.append(
+    if age > 50:
+        return (
             f"Âge ({age} ans) : bilan cardiovasculaire tous les 2 ans. "
-            "Activité physique régulière, alimentation équilibrée, "
-            "arrêt du tabac si fumeur."
+            "Activité physique régulière, alimentation équilibrée, arrêt du tabac si fumeur."
         )
+    return None
 
-    # =========================================================================
-    # 2. PRESSION ARTÉRIELLE
-    # =========================================================================
-    trestbps = patient_data.get('trestbps', 0)
-    if trestbps >= 160:
-        recommendations.append(
-            f"Tension sévère ({trestbps} mmHg) : consultation URGENTE. "
-            "Régime sans sel (< 5 g/jour), marche 30 min/jour, "
-            "automesure tensionnelle matin et soir."
-        )
-    elif trestbps >= 140:
-        recommendations.append(
-            f"Hypertension ({trestbps} mmHg) : consulter un médecin. "
-            "Réduire le sel, fruits et légumes, marche 30 min/jour, "
-            "perte de poids si surpoids."
-        )
-    elif trestbps >= 130:
-        recommendations.append(
-            f"Pré-hypertension ({trestbps} mmHg) : surveiller la tension tous les 6 mois. "
-            "Réduire le sel, activité physique régulière, contrôler le poids."
-        )
 
-    # =========================================================================
-    # 3. CHOLESTÉROL
-    # =========================================================================
-    chol = patient_data.get('chol', 0)
-    if chol >= 280:
-        recommendations.append(
-            f"Cholestérol sévère ({chol} mg/dL) : consultation pour bilan lipidique. "
-            "Supprimer graisses saturées (beurre, charcuterie, fritures), "
-            "adopter régime méditerranéen (huile d'olive, poissons gras, fibres)."
+def _blood_pressure_advice(pressure):
+    if pressure >= 160:
+        return (
+            f"Tension très élevée ({pressure} mmHg) : consultez rapidement un médecin. "
+            "Réduisez le sel (moins de 5 g/jour) et mesurez votre tension matin et soir."
         )
-    elif chol >= 240:
-        recommendations.append(
-            f"Cholestérol élevé ({chol} mg/dL) : régime méditerranéen, "
-            "réduire graisses saturées, poisson gras 2×/semaine, "
-            "marche 30 min/jour. Bilan lipidique dans 3 mois."
+    if pressure >= 140:
+        return (
+            f"Tension élevée ({pressure} mmHg) : consultez un médecin. "
+            "Moins de sel, fruits et légumes, marche 30 min/jour, perte de poids si surpoids."
         )
-    elif chol >= 200:
-        recommendations.append(
-            f"Cholestérol limite-haut ({chol} mg/dL) : surveiller l'alimentation, "
-            "limiter graisses animales, privilégier fibres et poissons, "
-            "activité physique régulière. Bilan lipidique annuel."
+    if pressure >= 130:
+        return (
+            f"Tension à surveiller ({pressure} mmHg) : contrôle tous les 6 mois. "
+            "Moins de sel, activité physique régulière, contrôle du poids."
         )
+    return None
 
-    # =========================================================================
-    # 4. GLYCÉMIE
-    # =========================================================================
-    if patient_data.get('fbs', 0) == 1:
-        recommendations.append(
-            "Glycémie à jeun élevée (> 120 mg/dL) : consulter pour dosage HbA1c. "
-            "Réduire sucres rapides (sodas, pâtisseries, pain blanc), "
-            "marche 15 min après les repas, fractionner les repas."
-        )
 
-    # =========================================================================
-    # 5. FRÉQUENCE CARDIAQUE MAXIMALE
-    # =========================================================================
-    thalach = patient_data.get('thalach', 0)
-    if thalach < 100:
-        recommendations.append(
-            f"Fréquence cardiaque maximale très basse ({thalach} bpm) : "
-            "consultation cardiologique URGENTE. "
-            "Bilan : ECG, échocardiographie, test d'effort."
+def _cholesterol_advice(cholesterol):
+    if cholesterol >= 280:
+        return (
+            f"Cholestérol très élevé ({cholesterol} mg/dL) : consultez pour un bilan lipidique. "
+            "Limitez beurre, charcuterie et fritures ; privilégiez poissons gras et fibres."
         )
-    elif thalach < 120:
-        recommendations.append(
-            f"Fréquence cardiaque maximale basse ({thalach} bpm) : "
-            "consultation cardiologique recommandée. "
-            "Reconditionnement progressif à l'effort (débuter par 15 min de marche)."
+    if cholesterol >= 240:
+        return (
+            f"Cholestérol élevé ({cholesterol} mg/dL) : moins de graisses saturées, poisson gras "
+            "2 fois par semaine, marche 30 min/jour. Bilan lipidique dans 3 mois."
         )
+    if cholesterol >= 200:
+        return (
+            f"Cholestérol limite ({cholesterol} mg/dL) : surveillez l'alimentation, "
+            "privilégiez fibres et poissons. Bilan lipidique annuel."
+        )
+    return None
 
-    # =========================================================================
-    # 6. ANGINE À L'EFFORT
-    # =========================================================================
-    if patient_data.get('exang', 0) == 1:
-        recommendations.append(
-            "Angine à l'effort détectée : consultation cardiologique RAPIDE (sous 8 jours). "
-            "Arrêter tout effort déclenchant la douleur. "
-            "Si douleur au repos ou aggravée : appel URGENCE (15)."
-        )
 
-    # =========================================================================
-    # 7. DÉPRESSION ST
-    # =========================================================================
-    oldpeak = patient_data.get('oldpeak', 0)
+def _heart_rate_advice(heart_rate):
+    if heart_rate < 100:
+        return (
+            f"Fréquence cardiaque maximale très basse ({heart_rate} bpm) : "
+            "avis cardiologique rapide conseillé (ECG, échocardiographie, test d'effort)."
+        )
+    if heart_rate < 120:
+        return (
+            f"Fréquence cardiaque maximale basse ({heart_rate} bpm) : avis cardiologique "
+            "conseillé. Reprenez l'effort progressivement, en commençant par 15 min de marche."
+        )
+    return None
+
+
+def _st_depression_advice(oldpeak):
     if oldpeak >= 3.0:
-        recommendations.append(
-            f"Dépression ST sévère ({oldpeak} mm) : ischémie myocardique probable. "
-            "Consultation cardiologique URGENTE. Arrêt immédiat de tout effort. "
-            "Si douleur thoracique : appel URGENCE (15)."
+        return (
+            f"Sous-décalage ST important ({oldpeak} mm) : signe possible d'ischémie, à confirmer. "
+            f"Consultation cardiologique rapide, évitez tout effort intense. {EMERGENCY_ADVICE}"
         )
-    elif oldpeak >= 1.5:
-        recommendations.append(
-            f"Dépression ST significative ({oldpeak} mm) : ECG d'effort recommandé. "
-            "Limiter les efforts physiques intenses, surveillance cardiologique."
+    if oldpeak >= 1.5:
+        return (
+            f"Sous-décalage ST notable ({oldpeak} mm) : ECG d'effort à discuter avec un médecin. "
+            "Limitez les efforts intenses en attendant."
         )
+    return None
 
-    # =========================================================================
-    # 8. VAISSEAUX OBSTRUÉS
-    # =========================================================================
-    ca = patient_data.get('ca', 0)
-    if ca >= 3:
-        recommendations.append(
-            f"{ca} vaisseaux obstrués (tritronculaire) : suivi cardiologique tous les 3 mois. "
-            "Traitement strict (antiagrégants, statine). Réadaptation cardiaque. "
-            "Reconnaître les signes d'alerte : douleur thoracique, essoufflement brutal."
-        )
-    elif ca == 2:
-        recommendations.append(
-            "2 vaisseaux obstrués (bitronculaire) : suivi cardiologique tous les 6 mois. "
-            "Traitement : statine, antiagrégant. Contrôle tension, cholestérol, glycémie. "
-            "Arrêt total du tabac."
-        )
-    elif ca == 1:
-        recommendations.append(
-            "Sténose coronaire unique détectée : suivi cardiologique annuel. "
-            "Traitement préventif, alimentation équilibrée, activité physique adaptée."
-        )
 
-    # =========================================================================
-    # 9. THALASSÉMIE — encodage 0-based
-    #    0=normal, 1=défaut fixe, 2=défaut réversible
-    # =========================================================================
-    thal = patient_data.get('thal', 0)
+def _vessels_advice(vessels):
+    if vessels >= 2:
+        return (
+            f"{vessels} vaisseaux principaux colorés en fluoroscopie : ce résultat est à "
+            "interpréter avec un cardiologue. Contrôlez tension, cholestérol et glycémie, "
+            "arrêt total du tabac."
+        )
+    if vessels == 1:
+        return (
+            "1 vaisseau principal coloré en fluoroscopie : résultat à interpréter avec "
+            "un cardiologue. Alimentation équilibrée et activité physique adaptée."
+        )
+    return None
+
+
+def _thallium_advice(thal):
     if thal == 1:
-        recommendations.append(
-            "Défaut fixe à la scintigraphie : séquelle d'infarctus probable. "
-            "Bilan cardiologique complet (échocardiographie). "
-            "Traitement préventif secondaire : statine, antiagrégant."
+        return (
+            "Défaut fixe à la scintigraphie : séquelle possible, à interpréter par un "
+            "cardiologue. Un bilan cardiologique complet est conseillé."
         )
-    elif thal == 2:
-        recommendations.append(
-            "Défaut réversible à la scintigraphie : ISCHÉMIE ACTIVE. "
-            "Consultation cardiologique URGENTE (sous 48 h). Coronarographie souvent indiquée. "
-            "Zéro tabac, arrêt de tout effort intense."
+    if thal == 2:
+        return (
+            "Défaut réversible à la scintigraphie : ischémie possible, à confirmer. "
+            "Consultation cardiologique rapide conseillée, évitez tout effort intense."
         )
+    return None
 
-    # =========================================================================
-    # 10. TYPE DE DOULEUR THORACIQUE — encodage 0-based
-    #     0=typique, 1=atypique, 2=non-angineuse, 3=asymptomatique
-    # =========================================================================
-    cp = patient_data.get('cp', 3)
-    if cp == 0:
-        recommendations.append(
-            "Angine typique confirmée : bilan coronarien recommandé. "
-            "Éviter les efforts déclenchants, consulter un cardiologue."
-        )
 
-    # =========================================================================
-    # 11. RECOMMANDATION GLOBALE SELON LE RISQUE
-    # =========================================================================
+def _overall_advice(prediction, probability):
     if prediction == 0:
-        p_sain = 1 - probability
-        if p_sain >= 0.85:
-            recommendations.append(
-                "Santé cardiovasculaire excellente : continuez vos bonnes habitudes. "
-                "Marche 30 min/jour, 5 fruits/légumes par jour, sommeil 7–8 h. "
-                "Bilan de santé annuel."
+        if probability <= 0.15:
+            return (
+                "Le modèle ne détecte pas de signal de risque élevé. Gardez vos bonnes habitudes "
+                "et faites un bilan de santé annuel."
             )
-        else:
-            recommendations.append(
-                "Risque faible détecté : bilan de santé annuel recommandé. "
-                "Corriger les facteurs de risque identifiés, activité physique régulière, "
-                "alimentation équilibrée, arrêt du tabac si fumeur."
-            )
-    else:
-        if probability < 0.60:
-            recommendations.append(
-                "Risque modéré : consultation médicale dans les 2 à 4 semaines. "
-                "Bilan complet (tension, lipides, glycémie, ECG). "
-                "Appliquer les recommandations spécifiques ci-dessus."
-            )
-        elif probability < 0.80:
-            recommendations.append(
-                "Risque élevé : consultation cardiologique RAPIDE (sous 8 jours) IMPÉRATIVE. "
-                "ECG, échocardiographie, bilan biologique complet. "
-                "Si douleur thoracique ou essoufflement : appel URGENCE (15)."
-            )
-        else:
-            recommendations.append(
-                "RISQUE TRÈS ÉLEVÉ : consultation URGENTE (sous 48 h). "
-                "Ne pas laisser le patient repartir sans avis cardiologique. "
-                "Numéros d'urgence : 15 · 18 · 112."
-            )
+        return (
+            "Risque faible selon le modèle : bilan de santé annuel conseillé. "
+            "Corrigez les facteurs de risque identifiés, arrêt du tabac si fumeur."
+        )
+    if probability < 0.60:
+        return (
+            "Risque modéré selon le modèle : consultation médicale dans les 2 à 4 semaines "
+            "(tension, lipides, glycémie, ECG)."
+        )
+    if probability < 0.80:
+        return (
+            f"Risque élevé selon le modèle : consultation cardiologique sous 8 jours. "
+            f"{EMERGENCY_ADVICE}"
+        )
+    return (
+        f"Risque très élevé selon le modèle : consultation médicale urgente (sous 48 h). "
+        f"{EMERGENCY_ADVICE}"
+    )
 
-    # Dédoublonnage (conserve l'ordre)
-    seen, unique = set(), []
-    for r in recommendations:
-        if r not in seen:
-            seen.add(r)
-            unique.append(r)
-    return unique
+
+def generate_recommendations(patient, prediction, probability):
+    """Assemble les conseils correspondant aux facteurs de risque du patient."""
+    advice = [
+        _age_advice(patient["age"]),
+        _blood_pressure_advice(patient["trestbps"]),
+        _cholesterol_advice(patient["chol"]),
+        _heart_rate_advice(patient["thalach"]),
+        _st_depression_advice(patient["oldpeak"]),
+        _vessels_advice(patient["ca"]),
+        _thallium_advice(patient["thal"]),
+    ]
+    if patient["fbs"] == 1:
+        advice.append(
+            "Glycémie à jeun élevée (> 120 mg/dL) : consultez pour un dosage HbA1c. "
+            "Réduisez les sucres rapides et marchez 15 min après les repas."
+        )
+    if patient["exang"] == 1:
+        advice.append(
+            "Angine à l'effort signalée : consultation cardiologique sous 8 jours. "
+            f"Arrêtez tout effort déclenchant la douleur. {EMERGENCY_ADVICE}"
+        )
+    if patient["cp"] == 0:
+        advice.append(
+            "Douleur angineuse typique signalée : bilan coronarien à discuter avec un cardiologue."
+        )
+    advice.append(_overall_advice(prediction, probability))
+    return [item for item in advice if item]
 
 
 def get_risk_level(prediction, probability):
-    """
-    Détermine le niveau de risque clinique.
-
-    Niveaux :
-      0 — prediction=0, P(malade) < 20 %    → Aucun risque
-      1 — prediction=0, P(malade) 20–50 %   → Risque faible
-      2 — prediction=1, P(malade) 50–60 %   → Risque modéré
-      3 — prediction=1, P(malade) 60–80 %   → Risque élevé
-      4 — prediction=1, P(malade) ≥ 80 %    → Risque très élevé
-    """
+    """Traduit la probabilité en niveau de risque (0 à 4), libellé et description."""
     if prediction == 0:
         if probability < 0.20:
-            return (0, "Aucun risque",
-                    "Santé cardiovasculaire excellente. Bilan annuel recommandé.")
-        else:
-            return (1, "Risque faible",
-                    "Risque faible détecté. Surveillance médicale régulière.")
-    else:
-        if probability < 0.60:
-            return (2, "Risque modéré",
-                    "Risque modéré. Consultation médicale dans le mois.")
-        elif probability < 0.80:
-            return (3, "Risque élevé",
-                    "Risque élevé. Consultation cardiologique rapide (sous 8 jours).")
-        else:
-            return (4, "Risque très élevé",
-                    "RISQUE TRÈS ÉLEVÉ — Consultation URGENTE (sous 48 h).")
+            return (
+                0,
+                "Risque très faible",
+                "Probabilité très faible selon le modèle. Bilan annuel conseillé.",
+            )
+        return 1, "Risque faible", "Probabilité faible selon le modèle. Suivi médical régulier."
+    if probability < 0.60:
+        return 2, "Risque modéré", "Risque modéré selon le modèle. Consultation dans le mois."
+    if probability < 0.80:
+        return (
+            3,
+            "Risque élevé",
+            "Risque élevé selon le modèle. Consultation cardiologique sous 8 jours.",
+        )
+    return (
+        4,
+        "Risque très élevé",
+        "Risque très élevé selon le modèle. Consultation médicale urgente sous 48 h.",
+    )
