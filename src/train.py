@@ -1,186 +1,122 @@
-"""
-3_train.py — Entraînement et optimisation des modèles
-======================================================
-Dataset : UCI Heart Disease combiné (834 patients — labels corrects)
+"""Optimise les trois modèles et choisit le modèle final sur le train uniquement.
+
+Le jeu de test n'est jamais lu ici : il sert une seule fois, dans evaluate.py.
 """
 
-import pandas as pd
-import numpy as np
-import joblib
+import hashlib
 import json
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
-from sklearn.model_selection import GridSearchCV, cross_val_score
-from sklearn.metrics import (accuracy_score, classification_report,
-                             roc_auc_score, confusion_matrix)
+import logging
+from datetime import UTC, datetime
 
-print("=" * 60)
-print("ENTRAÎNEMENT — UCI HEART DISEASE COMBINÉ")
-print("=" * 60)
+import joblib
+import sklearn
 
-# ============================================================================
-# 1. CHARGEMENT
-# ============================================================================
-X_train = np.loadtxt('../data/X_train_preprocessed_full.csv', delimiter=',')
-X_test  = np.loadtxt('../data/X_test_preprocessed_full.csv',  delimiter=',')
-y_train = pd.read_csv('../data/y_train_full.csv')['target']
-y_test  = pd.read_csv('../data/y_test_full.csv')['target']
-
-print(f"\n  X_train : {X_train.shape}  |  X_test : {X_test.shape}")
-print(f"  y_train : {y_train.shape}  |  y_test  : {y_test.shape}")
-print(f"  Features après transformation : {X_train.shape[1]}")
-
-# ============================================================================
-# 2. MODÈLES BASELINE
-# ============================================================================
-print("\n" + "=" * 60)
-print("MODÈLES BASELINE")
-print("=" * 60)
-
-baseline_models = {
-    "Régression Logistique": LogisticRegression(random_state=42, max_iter=1000),
-    "Random Forest":         RandomForestClassifier(random_state=42, n_estimators=100),
-    "SVM":                   SVC(random_state=42, probability=True),
-}
-
-baseline_results = {}
-
-for name, model in baseline_models.items():
-    model.fit(X_train, y_train)
-    y_pred  = model.predict(X_test)
-    y_proba = model.predict_proba(X_test)[:, 1]
-    acc     = accuracy_score(y_test, y_pred)
-    auc     = roc_auc_score(y_test, y_proba)
-    cv_acc  = cross_val_score(model, X_train, y_train, cv=5,
-                               scoring='accuracy').mean()
-    baseline_results[name] = {
-        'model': model, 'accuracy': acc, 'auc': auc, 'cv_accuracy': cv_acc
-    }
-    print(f"\n  {name}")
-    print(f"    Accuracy test : {acc:.4f}  |  AUC : {auc:.4f}  |  CV-5 accuracy : {cv_acc:.4f}")
-
-# ============================================================================
-# 3. OPTIMISATION HYPERPARAMÈTRES — RANDOM FOREST
-# ============================================================================
-print("\n" + "=" * 60)
-print("OPTIMISATION HYPERPARAMÈTRES — RANDOM FOREST (GridSearchCV 5-fold)")
-print("=" * 60)
-
-param_grid = {
-    'n_estimators':      [100, 200, 300],
-    'max_depth':         [None, 10, 20],
-    'min_samples_split': [2, 5],
-    'min_samples_leaf':  [1, 2],
-}
-
-print(f"  Grille : {param_grid}")
-print("  Recherche en cours (patience)...")
-
-grid_search = GridSearchCV(
-    RandomForestClassifier(random_state=42),
-    param_grid,
-    cv=5,
-    scoring='accuracy',
-    n_jobs=-1,
-    verbose=0
+from src.config import (
+    DECISION_THRESHOLD,
+    FEATURE_ORDER,
+    METADATA_PATH,
+    MIN_SPECIFICITY,
+    MODEL_PATH,
+    SELECTION_PATH,
 )
-grid_search.fit(X_train, y_train)
+from src.modeling import CANDIDATES, MODEL_NAMES, rank_configuration, tune
+from src.preprocessing import load_dataset, split_dataset
 
-print(f"\n  ✅ Meilleurs paramètres  : {grid_search.best_params_}")
-print(f"  ✅ Meilleure accuracy CV : {grid_search.best_score_:.4f}")
+logger = logging.getLogger(__name__)
 
-# ============================================================================
-# 4. ÉVALUATION DU MODÈLE OPTIMISÉ
-# ============================================================================
-print("\n" + "=" * 60)
-print("ÉVALUATION SUR LE TEST SET — RANDOM FOREST OPTIMISÉ")
-print("=" * 60)
+MODEL_VERSION = "4.0.0"
+METRICS = ("sensibilite", "specificite", "accuracy", "auc")
 
-best_rf = grid_search.best_estimator_
-y_pred  = best_rf.predict(X_test)
-y_proba = best_rf.predict_proba(X_test)[:, 1]
 
-acc_best = accuracy_score(y_test, y_pred)
-auc_best = roc_auc_score(y_test, y_proba)
-cm       = confusion_matrix(y_test, y_pred)
+def summarize_search(search):
+    """Extrait les paramètres retenus et leurs scores moyens de validation croisée."""
+    index = search.best_index_
+    results = search.cv_results_
+    return {
+        "parametres": {
+            key.replace("model__", ""): value for key, value in search.best_params_.items()
+        },
+        "validation_croisee": {
+            metric: {
+                "moyenne": float(results[f"mean_test_{metric}"][index]),
+                "ecart_type": float(results[f"std_test_{metric}"][index]),
+            }
+            for metric in METRICS
+        },
+    }
 
-print(f"\n  Accuracy : {acc_best:.4f}")
-print(f"  AUC      : {auc_best:.4f}")
-print(f"\n  Rapport de classification :")
-print(classification_report(y_test, y_pred, target_names=['Sain', 'Malade']))
 
-print(f"  Matrice de confusion :")
-print(f"    Vrais Négatifs (TN) : {cm[0,0]}  |  Faux Positifs (FP) : {cm[0,1]}")
-print(f"    Faux Négatifs  (FN) : {cm[1,0]}  |  Vrais Positifs (TP) : {cm[1,1]}")
+def select_candidate(summaries):
+    """Applique entre les familles de modèles la même règle qu'entre configurations."""
+    names = list(summaries)
+    scores = {
+        metric: [summaries[name]["validation_croisee"][metric]["moyenne"] for name in names]
+        for metric in ("sensibilite", "specificite", "auc")
+    }
+    return names[rank_configuration(scores["sensibilite"], scores["specificite"], scores["auc"])]
 
-tn, fp, fn, tp = cm.ravel()
-sensitivity = tp / (tp + fn)
-specificity = tn / (tn + fp)
-print(f"\n  Sensibilité (recall malade) : {sensitivity:.4f}")
-print(f"  Spécificité (recall sain)   : {specificity:.4f}")
 
-# ============================================================================
-# 5. SÉLECTION DU MODÈLE FINAL
-# ============================================================================
-print("\n" + "=" * 60)
-print("SÉLECTION DU MODÈLE FINAL")
-print("=" * 60)
+def main():
+    """Lance la sélection puis sauvegarde le Pipeline retenu et ses métadonnées."""
+    X_train, _, y_train, _ = split_dataset(load_dataset())
 
-acc_baseline_rf = baseline_results['Random Forest']['accuracy']
+    searches = {name: tune(name, X_train, y_train) for name in CANDIDATES}
+    summaries = {name: summarize_search(search) for name, search in searches.items()}
+    selected = select_candidate(summaries)
 
-if acc_best >= acc_baseline_rf:
-    final_model      = best_rf
-    final_model_name = "Random Forest (optimisé)"
-    final_accuracy   = acc_best
-    final_auc        = auc_best
-else:
-    final_model      = baseline_results['Random Forest']['model']
-    final_model_name = "Random Forest (baseline)"
-    final_accuracy   = acc_baseline_rf
-    final_auc        = baseline_results['Random Forest']['auc']
+    for name, summary in summaries.items():
+        cv = summary["validation_croisee"]
+        logger.info(
+            "%-22s sens=%.4f spec=%.4f auc=%.4f %s",
+            MODEL_NAMES[name],
+            cv["sensibilite"]["moyenne"],
+            cv["specificite"]["moyenne"],
+            cv["auc"]["moyenne"],
+            summary["parametres"],
+        )
+    logger.info("Modèle retenu : %s", MODEL_NAMES[selected])
 
-print(f"\n  🏆 Modèle sélectionné : {final_model_name}")
-print(f"     Accuracy = {final_accuracy:.4f}  |  AUC = {final_auc:.4f}")
+    MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(searches[selected].best_estimator_, MODEL_PATH, compress=3)
 
-print("\n  Récapitulatif de tous les modèles :")
-print(f"  {'Modèle':<30} {'Accuracy':<10} {'AUC':<10} {'CV Acc':<10}")
-print("  " + "-" * 60)
-for name, res in baseline_results.items():
-    print(f"  {name:<30} {res['accuracy']:<10.4f} {res['auc']:<10.4f} {res['cv_accuracy']:.4f}")
-print(f"  {'RF optimisé (GridSearch)':<30} {acc_best:<10.4f} {auc_best:<10.4f} {grid_search.best_score_:.4f}")
+    SELECTION_PATH.parent.mkdir(parents=True, exist_ok=True)
+    SELECTION_PATH.write_text(
+        json.dumps(
+            {
+                "regle": (
+                    "Sensibilité moyenne maximale en validation croisée 5 plis sur le train, "
+                    f"sous contrainte de spécificité >= {MIN_SPECIFICITY}, AUC en départage."
+                ),
+                "modele_retenu": selected,
+                "candidats": summaries,
+            },
+            indent=2,
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
 
-# ============================================================================
-# 6. SAUVEGARDE DES MODÈLES ET MÉTRIQUES
-# ============================================================================
-print("\n" + "=" * 60)
-print("SAUVEGARDE")
-print("=" * 60)
+    METADATA_PATH.write_text(
+        json.dumps(
+            {
+                "version": MODEL_VERSION,
+                "date_entrainement": datetime.now(UTC).date().isoformat(),
+                "modele": MODEL_NAMES[selected],
+                "parametres": summaries[selected]["parametres"],
+                "colonnes": FEATURE_ORDER,
+                "seuil_decision": DECISION_THRESHOLD,
+                "n_train": int(len(X_train)),
+                "scikit_learn": sklearn.__version__,
+                "sha256": hashlib.sha256(MODEL_PATH.read_bytes()).hexdigest(),
+                "validation_croisee_train": summaries[selected]["validation_croisee"],
+            },
+            indent=2,
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
 
-joblib.dump(final_model, '../models/best_model_full.joblib')
-# Sauvegarder aussi les baselines pour 4_evaluate.py
-joblib.dump(baseline_results['Régression Logistique']['model'],
-            '../models/best_model_lr.joblib')
-joblib.dump(baseline_results['SVM']['model'],
-            '../models/best_model_svm.joblib')
-print("  ✅ Modèles sauvegardés (RF, LR, SVM)")
 
-params = {
-    'dataset':         'heart_uci_combined.csv',
-    'n_patients_train': int(X_train.shape[0]),
-    'n_patients_test':  int(X_test.shape[0]),
-    'best_model':       final_model_name,
-    'accuracy':         float(final_accuracy),
-    'auc':              float(final_auc),
-    'sensitivity':      float(sensitivity),
-    'specificity':      float(specificity),
-    'best_params':      grid_search.best_params_,
-    'cv_best_score':    float(grid_search.best_score_),
-}
-with open('../models/model_info.json', 'w') as f:
-    json.dump(params, f, indent=4)
-print("  ✅ model_info.json sauvegardé")
-
-print("\n" + "=" * 60)
-print("✅ ENTRAÎNEMENT TERMINÉ")
-print("=" * 60)
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    main()
