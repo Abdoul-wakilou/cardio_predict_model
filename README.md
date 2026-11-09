@@ -10,7 +10,7 @@
 
 ## Sommaire
 
-[Contexte](#contexte) · [Objectifs](#objectifs) · [Données](#données) · [Méthodologie](#méthodologie) · [Résultats](#résultats) · [Écart avec le mémoire](#écart-avec-le-mémoire) · [Architecture](#architecture) · [Installation](#installation-et-utilisation) · [API](#documentation-de-lapi) · [Structure](#structure-du-dépôt) · [Limites](#limites-et-perspectives) · [Auteur](#auteur) · [Citation](#citation-et-licence)
+[Contexte](#contexte) · [Objectifs](#objectifs) · [Données](#données) · [Méthodologie](#méthodologie) · [Résultats](#résultats) · [Corrections depuis le mémoire](#corrections-apportées-depuis-le-mémoire) · [Architecture](#architecture) · [Installation](#installation-et-utilisation) · [API](#documentation-de-lapi) · [Structure](#structure-du-dépôt) · [Limites](#limites-et-perspectives) · [Auteur](#auteur) · [Citation](#citation-et-licence)
 
 ## Contexte
 
@@ -149,9 +149,9 @@ La permutation mesure la perte d'AUC du modèle retenu sur le test. Les variable
 
 ![Importance par permutation](reports/figures/importance_permutation.png)
 
-## Écart avec le mémoire
+## Corrections apportées depuis le mémoire
 
-Les chiffres du mémoire se reproduisent à l'identique au commit `5c26eb6`. Une revue postérieure à la soutenance a établi qu'ils sont surestimés.
+Après la soutenance, j'ai repris le pipeline et identifié une fuite de données. Les chiffres ci-dessous remplacent ceux du mémoire.
 
 | Random Forest, 251 patients de test | Accuracy | AUC | Sensibilité | Spécificité |
 |---|---:|---:|---:|---:|
@@ -163,7 +163,9 @@ Les chiffres du mémoire se reproduisent à l'identique au commit `5c26eb6`. Une
 
 **Cause 2 : zéros non traités.** 157 patients avaient `chol = 0`, un code d'absence de mesure concentré à Long Beach VA et en Suisse (30,2 % des malades, 4,6 % des sains), ce qui renseignait le modèle sur le centre d'origine.
 
-**Autres changements.** Le choix du modèle se faisait sur le jeu de test et seul le Random Forest était optimisé. La cohorte de 834 patients et le découpage restent identiques, ce qui rend la comparaison directe.
+**Méthode de sélection.** Le mémoire choisissait le modèle sur le jeu de test et n'optimisait que le Random Forest. Les trois familles sont désormais optimisées et le choix se fait sur le seul jeu d'entraînement. La cohorte de 834 patients et le découpage restent identiques, ce qui rend la comparaison directe.
+
+Les chiffres du mémoire restent reproductibles au commit `5c26eb6`.
 
 ## Architecture
 
