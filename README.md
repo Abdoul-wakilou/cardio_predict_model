@@ -202,7 +202,7 @@ cp .env.example .env                           # facultatif
 waitress-serve --listen=127.0.0.1:5000 api.app:app
 ```
 
-En production, l'API reste derrière un proxy (Nginx par exemple) qui impose HTTPS, avec `CARDIO_TRUSTED_PROXIES=1`. Pour tester depuis un émulateur Android, écouter sur `--listen=0.0.0.0:5000` sur un réseau de développement uniquement. Pour Flutter Web, déclarer l'origine exacte dans `CARDIO_CORS_ORIGINS`.
+En production, l'API reste derrière un proxy (Nginx par exemple) qui impose HTTPS, avec `CARDIO_TRUSTED_PROXIES=1`. L'émulateur Android joint directement `127.0.0.1` de l'ordinateur par l'adresse `10.0.2.2`. Pour un téléphone physique, écouter sur `--listen=0.0.0.0:5000`, sur un réseau de développement uniquement, et indiquer l'adresse IP de l'ordinateur dans l'application. Pour Flutter Web, déclarer l'origine exacte dans `CARDIO_CORS_ORIGINS`.
 
 **Exemple de requête** :
 
