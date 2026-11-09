@@ -1,0 +1,246 @@
+{
+  "validation_croisee_imbriquee": {
+    "regression_logistique": {
+      "accuracy": {
+        "moyenne": 0.7984652897303499,
+        "ecart_type": 0.0485666931397889
+      },
+      "auc": {
+        "moyenne": 0.8797221962699835,
+        "ecart_type": 0.036312850084852036
+      },
+      "sensibilite": {
+        "moyenne": 0.8271045328399629,
+        "ecart_type": 0.053163247137743785
+      },
+      "specificite": {
+        "moyenne": 0.7629445234708393,
+        "ecart_type": 0.07567651124149667
+      }
+    },
+    "svm": {
+      "accuracy": {
+        "moyenne": 0.8080464716006885,
+        "ecart_type": 0.05137432750647922
+      },
+      "auc": {
+        "moyenne": 0.8770351197392434,
+        "ecart_type": 0.04569620180749383
+      },
+      "sensibilite": {
+        "moyenne": 0.8701665124884366,
+        "ecart_type": 0.05163057851519306
+      },
+      "specificite": {
+        "moyenne": 0.7308677098150783,
+        "ecart_type": 0.07791424797230331
+      }
+    },
+    "random_forest": {
+      "accuracy": {
+        "moyenne": 0.8105278255880665,
+        "ecart_type": 0.03635671159100048
+      },
+      "auc": {
+        "moyenne": 0.8799716557689194,
+        "ecart_type": 0.030623620702869142
+      },
+      "sensibilite": {
+        "moyenne": 0.8552266419981498,
+        "ecart_type": 0.042416221664109806
+      },
+      "specificite": {
+        "moyenne": 0.7549786628733998,
+        "ecart_type": 0.06855330224644669
+      }
+    }
+  },
+  "validation_par_centre": {
+    "regression_logistique": {
+      "Cleveland": {
+        "n": 303,
+        "malades": 139,
+        "accuracy": 0.7524752475247525,
+        "auc": 0.8751974030531673,
+        "sensibilite": 0.8633093525179856,
+        "specificite": 0.6585365853658537,
+        "brier": 0.1642986273189525,
+        "matrice_confusion": {
+          "TN": 108,
+          "FP": 56,
+          "FN": 19,
+          "TP": 120
+        }
+      },
+      "Hungarian": {
+        "n": 272,
+        "malades": 103,
+        "accuracy": 0.8088235294117647,
+        "auc": 0.8842419716206125,
+        "sensibilite": 0.7864077669902912,
+        "specificite": 0.8224852071005917,
+        "brier": 0.1345599056574614,
+        "matrice_confusion": {
+          "TN": 139,
+          "FP": 30,
+          "FN": 22,
+          "TP": 81
+        }
+      },
+      "Switzerland": {
+        "n": 117,
+        "malades": 109,
+        "accuracy": 0.6923076923076923,
+        "auc": 0.7488532110091743,
+        "sensibilite": 0.6880733944954128,
+        "specificite": 0.75,
+        "brier": 0.21232472638568695,
+        "matrice_confusion": {
+          "TN": 6,
+          "FP": 2,
+          "FN": 34,
+          "TP": 75
+        }
+      },
+      "Long Beach VA": {
+        "n": 142,
+        "malades": 112,
+        "accuracy": 0.7816901408450704,
+        "auc": 0.6764880952380953,
+        "sensibilite": 0.9107142857142857,
+        "specificite": 0.3,
+        "brier": 0.15963386644822045,
+        "matrice_confusion": {
+          "TN": 9,
+          "FP": 21,
+          "FN": 10,
+          "TP": 102
+        }
+      }
+    },
+    "svm": {
+      "Cleveland": {
+        "n": 303,
+        "malades": 139,
+        "accuracy": 0.7326732673267327,
+        "auc": 0.8701307246885418,
+        "sensibilite": 0.8705035971223022,
+        "specificite": 0.6158536585365854,
+        "brier": 0.16900387778533182,
+        "matrice_confusion": {
+          "TN": 101,
+          "FP": 63,
+          "FN": 18,
+          "TP": 121
+        }
+      },
+      "Hungarian": {
+        "n": 272,
+        "malades": 103,
+        "accuracy": 0.7867647058823529,
+        "auc": 0.8539667949675418,
+        "sensibilite": 0.7475728155339806,
+        "specificite": 0.8106508875739645,
+        "brier": 0.1500083731016538,
+        "matrice_confusion": {
+          "TN": 137,
+          "FP": 32,
+          "FN": 26,
+          "TP": 77
+        }
+      },
+      "Switzerland": {
+        "n": 117,
+        "malades": 109,
+        "accuracy": 0.7094017094017094,
+        "auc": 0.7477064220183487,
+        "sensibilite": 0.7064220183486238,
+        "specificite": 0.75,
+        "brier": 0.18802407222349463,
+        "matrice_confusion": {
+          "TN": 6,
+          "FP": 2,
+          "FN": 32,
+          "TP": 77
+        }
+      },
+      "Long Beach VA": {
+        "n": 142,
+        "malades": 112,
+        "accuracy": 0.7816901408450704,
+        "auc": 0.6550595238095238,
+        "sensibilite": 0.9196428571428571,
+        "specificite": 0.26666666666666666,
+        "brier": 0.16082050231846867,
+        "matrice_confusion": {
+          "TN": 8,
+          "FP": 22,
+          "FN": 9,
+          "TP": 103
+        }
+      }
+    },
+    "random_forest": {
+      "Cleveland": {
+        "n": 303,
+        "malades": 139,
+        "accuracy": 0.7458745874587459,
+        "auc": 0.8486137918933145,
+        "sensibilite": 0.8489208633093526,
+        "specificite": 0.6585365853658537,
+        "brier": 0.16962105362291555,
+        "matrice_confusion": {
+          "TN": 108,
+          "FP": 56,
+          "FN": 21,
+          "TP": 118
+        }
+      },
+      "Hungarian": {
+        "n": 272,
+        "malades": 103,
+        "accuracy": 0.7867647058823529,
+        "auc": 0.8578732693743897,
+        "sensibilite": 0.8252427184466019,
+        "specificite": 0.7633136094674556,
+        "brier": 0.15922183432441325,
+        "matrice_confusion": {
+          "TN": 129,
+          "FP": 40,
+          "FN": 18,
+          "TP": 85
+        }
+      },
+      "Switzerland": {
+        "n": 117,
+        "malades": 109,
+        "accuracy": 0.7264957264957265,
+        "auc": 0.786697247706422,
+        "sensibilite": 0.7247706422018348,
+        "specificite": 0.75,
+        "brier": 0.18616009637593026,
+        "matrice_confusion": {
+          "TN": 6,
+          "FP": 2,
+          "FN": 30,
+          "TP": 79
+        }
+      },
+      "Long Beach VA": {
+        "n": 142,
+        "malades": 112,
+        "accuracy": 0.7746478873239436,
+        "auc": 0.6272321428571429,
+        "sensibilite": 0.9107142857142857,
+        "specificite": 0.26666666666666666,
+        "brier": 0.16791830985915493,
+        "matrice_confusion": {
+          "TN": 8,
+          "FP": 22,
+          "FN": 10,
+          "TP": 102
+        }
+      }
+    }
+  }
+}

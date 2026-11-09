@@ -1,0 +1,80 @@
+{
+  "version": "4.0.0",
+  "date_entrainement": "2026-11-08",
+  "modele": "SVM",
+  "parametres": {
+    "C": 10,
+    "class_weight": null,
+    "gamma": "scale"
+  },
+  "colonnes": [
+    "age",
+    "sex",
+    "cp",
+    "trestbps",
+    "chol",
+    "fbs",
+    "restecg",
+    "thalach",
+    "exang",
+    "oldpeak",
+    "slope",
+    "ca",
+    "thal"
+  ],
+  "seuil_decision": 0.5,
+  "n_train": 583,
+  "scikit_learn": "1.8.0",
+  "sha256": "a081d61ec269057286ced7fbee5463ddc1320096254ec0bc18f3efaa3cc211af",
+  "validation_croisee_train": {
+    "sensibilite": {
+      "moyenne": 0.8674519230769231,
+      "ecart_type": 0.04386228195279524
+    },
+    "specificite": {
+      "moyenne": 0.7374811463046758,
+      "ecart_type": 0.008365263724803671
+    },
+    "accuracy": {
+      "moyenne": 0.8096522251694666,
+      "ecart_type": 0.02347353831878894
+    },
+    "auc": {
+      "moyenne": 0.8493721356885949,
+      "ecart_type": 0.03161439537116096
+    }
+  },
+  "resultats_test": {
+    "n": 251,
+    "malades": 139,
+    "accuracy": 0.7649402390438247,
+    "auc": 0.8441675231243577,
+    "sensibilite": 0.8201438848920863,
+    "specificite": 0.6964285714285714,
+    "brier": 0.15963480480524717,
+    "matrice_confusion": {
+      "TN": 78,
+      "FP": 34,
+      "FN": 25,
+      "TP": 114
+    },
+    "intervalle_confiance_95": {
+      "accuracy": [
+        0.7091633466135459,
+        0.8167330677290837
+      ],
+      "auc": [
+        0.794380407835298,
+        0.8901871177648029
+      ],
+      "sensibilite": [
+        0.7535187150299054,
+        0.881483918128655
+      ],
+      "specificite": [
+        0.6078339747113798,
+        0.7800121951219512
+      ]
+    }
+  }
+}
