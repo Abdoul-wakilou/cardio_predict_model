@@ -274,6 +274,8 @@ data/
 models/
   cardio_pipeline.joblib   Pipeline complet retenu
   metadata.json            Version, date, colonnes, empreinte, métriques
+notebooks/
+  imputation_leakage_heart_disease.ipynb   Étude de la fuite de données, en anglais
 reports/
   figures/             Figures de l'exploration et de l'évaluation
   *.json               Sélection, résultats de test, robustesse
